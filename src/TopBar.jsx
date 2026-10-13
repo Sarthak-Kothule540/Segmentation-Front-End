@@ -789,6 +789,7 @@ export default function TopBar({
   onUpperSelected,
   onLowerSelected,
   onIdentifyLat,
+   onSegment,
   onToolClick,
   busy,
   progress,
@@ -888,7 +889,12 @@ export default function TopBar({
             >
               Identify LAT
             </button>
-            <button style={styles.toolButton}>Segment</button>
+            <button
+          style={{ ...styles.toolButton, opacity: busy ? 0.5 : 1 }}
+          disabled={busy}
+          onClick={onSegment}>
+          Segment
+         </button>
           </div>
         )}
 
@@ -922,7 +928,7 @@ const styles = {
   },
   message: {
     marginLeft: 20,
-    color: "#f9e2af",
+    color: "#ffffff",
     fontSize: 14,
   },
   secondBar: {

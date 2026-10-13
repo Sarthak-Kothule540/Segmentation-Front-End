@@ -1,0 +1,238 @@
+// // import * as THREE from "three";
+
+// // // maximum number of editable points (handles) for each tooth curve
+// // export const MAX_HANDLES = 20;
+
+// // // CSV text: one point per line as "x,y,z"  ->  list of 3D points
+// // export function parseLatCsv(text) {
+// //   const points = [];
+// //   for (const line of text.split(/\r?\n/)) {
+// //     const parts = line.trim().split(/[,;\s]+/).map(Number);
+// //     // lines that are not 3 numbers (empty lines, a header) are skipped
+// //     if (parts.length >= 3 && parts.slice(0, 3).every(Number.isFinite)) {
+// //       points.push(new THREE.Vector3(parts[0], parts[1], parts[2]));
+// //     }
+// //   }
+// //   return points;
+// // }
+
+// // // picks at most maxHandles points, evenly spread along the curve
+// // export function makeControlPoints(points, maxHandles = MAX_HANDLES) {
+// //   let pts = points;
+
+// //   // if the last point repeats the first one, drop it (the curve is closed anyway)
+// //   if (pts.length > 3 && pts[0].distanceTo(pts[pts.length - 1]) < 1e-4) {
+// //     pts = pts.slice(0, -1);
+// //   }
+
+// //   if (pts.length <= maxHandles) return pts.map((p) => p.clone());
+
+// //   const step = pts.length / maxHandles;
+// //   const result = [];
+// //   for (let i = 0; i < maxHandles; i++) {
+// //     result.push(pts[Math.floor(i * step)].clone());
+// //   }
+// //   return result;
+// // }
+
+// // // downloads the CSV files of one jaw from the backend
+// // // returns: [{ id: "11", points: [Vector3, ...] }, ...]
+// // export async function loadLatCurves(backendUrl, jaw, fileNames, stamp) {
+// //   const curves = [];
+
+// //   for (const name of fileNames) {
+// //     const res = await fetch(`${backendUrl}/files/${jaw}/Output/${name}?t=${stamp}`);
+// //     const text = await res.text();
+// //     const all = parseLatCsv(text);
+
+// //     if (all.length < 3) continue; // not enough points for a curve
+
+// //     curves.push({
+// //       id: name.replace(/\.csv$/i, ""), // "11.csv" -> "11"
+// //       points: makeControlPoints(all),
+// //     });
+// //   }
+
+// //   return curves;
+// // }
+
+
+
+
+
+
+
+// import * as THREE from "three";
+
+// // maximum number of editable points (handles) for each tooth curve
+// export const MAX_HANDLES = 20;
+
+// // number of points written to the CSV when an edited curve is saved
+// export const SAVE_SAMPLES = 200;
+
+// // CSV text: one point per line as "x,y,z"  ->  list of 3D points
+// export function parseLatCsv(text) {
+//   const points = [];
+//   for (const line of text.split(/\r?\n/)) {
+//     const parts = line.trim().split(/[,;\s]+/).map(Number);
+//     // lines that are not 3 numbers (empty lines, a header) are skipped
+//     if (parts.length >= 3 && parts.slice(0, 3).every(Number.isFinite)) {
+//       points.push(new THREE.Vector3(parts[0], parts[1], parts[2]));
+//     }
+//   }
+//   return points;
+// }
+
+// // picks at most maxHandles points, evenly spread along the curve
+// export function makeControlPoints(points, maxHandles = MAX_HANDLES) {
+//   let pts = points;
+
+//   // if the last point repeats the first one, drop it (the curve is closed anyway)
+//   if (pts.length > 3 && pts[0].distanceTo(pts[pts.length - 1]) < 1e-4) {
+//     pts = pts.slice(0, -1);
+//   }
+
+//   if (pts.length <= maxHandles) return pts.map((p) => p.clone());
+
+//   const step = pts.length / maxHandles;
+//   const result = [];
+//   for (let i = 0; i < maxHandles; i++) {
+//     result.push(pts[Math.floor(i * step)].clone());
+//   }
+//   return result;
+// }
+
+// // downloads the CSV files of one jaw from the backend
+// // returns: [{ id: "11", points: [Vector3, ...] }, ...]
+// export async function loadLatCurves(backendUrl, jaw, fileNames, stamp) {
+//   const curves = [];
+
+//   for (const name of fileNames) {
+//     const res = await fetch(`${backendUrl}/files/${jaw}/Output/${name}?t=${stamp}`);
+//     const text = await res.text();
+//     const all = parseLatCsv(text);
+
+//     if (all.length < 3) continue; // not enough points for a curve
+
+//     curves.push({
+//       id: name.replace(/\.csv$/i, ""), // "11.csv" -> "11"
+//       points: makeControlPoints(all),
+//     });
+//   }
+
+//   return curves;
+// }
+
+// // edited control points -> CSV text (smooth spline sampled into SAVE_SAMPLES points)
+// export function curveToCsv(controlPoints, samples = SAVE_SAMPLES) {
+//   const spline = new THREE.CatmullRomCurve3(controlPoints, true, "centripetal");
+//   const pts = spline.getPoints(samples).slice(0, -1); // the last point repeats the first
+//   return pts.map((p) => `${p.x},${p.y},${p.z}`).join("\n") + "\n";
+// }
+
+// // sends one edited curve to the backend, which writes it to <tooth>.csv
+// export async function saveLatCurve(backendUrl, jaw, id, controlPoints) {
+//   const res = await fetch(`${backendUrl}/api/save-lat`, {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({ jaw, id, csv: curveToCsv(controlPoints) }),
+//   });
+//   const result = await res.json();
+//   if (!res.ok) throw new Error(result.message);
+//   return result;
+// }
+
+
+
+
+import * as THREE from "three";
+import { parseStl } from "./stlUtils.js";
+
+// maximum number of editable points (handles) for each tooth curve
+export const MAX_HANDLES = 20;
+
+// number of points written to the CSV when an edited curve is saved
+export const SAVE_SAMPLES = 80;
+
+// CSV text: one point per line as "x,y,z"  ->  list of 3D points
+export function parseLatCsv(text) {
+  const points = [];
+  for (const line of text.split(/\r?\n/)) {
+    const parts = line.trim().split(/[,;\s]+/).map(Number);
+    // lines that are not 3 numbers (empty lines, a header) are skipped
+    if (parts.length >= 3 && parts.slice(0, 3).every(Number.isFinite)) {
+      points.push(new THREE.Vector3(parts[0], parts[1], parts[2]));
+    }
+  }
+  return points;
+}
+
+// picks at most maxHandles points, evenly spread along the curve
+export function makeControlPoints(points, maxHandles = MAX_HANDLES) {
+  let pts = points;
+
+  // if the last point repeats the first one, drop it (the curve is closed anyway)
+  if (pts.length > 3 && pts[0].distanceTo(pts[pts.length - 1]) < 1e-4) {
+    pts = pts.slice(0, -1);
+  }
+
+  if (pts.length <= maxHandles) return pts.map((p) => p.clone());
+
+  const step = pts.length / maxHandles;
+  const result = [];
+  for (let i = 0; i < maxHandles; i++) {
+    result.push(pts[Math.floor(i * step)].clone());
+  }
+  return result;
+}
+
+// downloads the CSV files of one jaw from the backend
+// returns: [{ id: "11", points: [Vector3, ...] }, ...]
+export async function loadLatCurves(backendUrl, jaw, fileNames, stamp) {
+  const curves = [];
+
+  for (const name of fileNames) {
+    const res = await fetch(`${backendUrl}/files/${jaw}/Output/${name}?t=${stamp}`);
+    const text = await res.text();
+    const all = parseLatCsv(text);
+
+    if (all.length < 3) continue; // not enough points for a curve
+
+    curves.push({
+      id: name.replace(/\.csv$/i, ""), // "11.csv" -> "11"
+      points: makeControlPoints(all),
+    });
+  }
+
+  return curves;
+}
+
+// edited control points -> CSV text (smooth spline sampled into SAVE_SAMPLES points)
+export function curveToCsv(controlPoints, samples = SAVE_SAMPLES) {
+  const spline = new THREE.CatmullRomCurve3(controlPoints, true, "centripetal");
+  const pts = spline.getPoints(samples).slice(0, -1); // the last point repeats the first
+  return pts.map((p) => `${p.x},${p.y},${p.z}`).join("\n") + "\n";
+}
+
+// sends one edited curve to the backend, which writes it to <tooth>.csv
+export async function saveLatCurve(backendUrl, jaw, id, controlPoints) {
+  const res = await fetch(`${backendUrl}/api/save-lat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jaw, id, csv: curveToCsv(controlPoints) }),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message);
+  return result;
+}
+
+// downloads the STL files (gum and teeth) of one jaw from the backend
+// returns: [{ name: "Gum.stl", geo }, { name: "11.stl", geo }, ...]
+export async function loadStlParts(backendUrl, jaw, fileNames, stamp) {
+  return Promise.all(
+    fileNames.map(async (name) => {
+      const res = await fetch(`${backendUrl}/files/${jaw}/Output/${name}?t=${stamp}`);
+      return { name, geo: parseStl(await res.arrayBuffer()) };
+    })
+  );
+}

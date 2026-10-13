@@ -76,7 +76,7 @@ const styles = {
   track: {
     position: "relative",
     width: "15%",   // half of the screen width
-    minWidth: 350,
+    minWidth: 400,
     height: 40,
     background: "#2a2a2a",
     border: "1px solid #666",
