@@ -1096,6 +1096,13 @@ const BACKEND_URL = "http://localhost:5174";
 const NO_CURVES = { upper: [], lower: [] };
 const ALL_VISIBLE = { upperTeeth: true, upperGum: true, lowerTeeth: true, lowerGum: true };
 
+// button text in the Clean Model tab -> command sent to the backend
+const NEW_EXE_COMMANDS = {
+  "Generate Trimline": "GenerateTrimline",
+  "Trim Model": "TrimModel",
+  "Add Base": "AddBase",
+};
+
 export default function App() {
   const [upper, setUpper] = useState({ name: "", geo: null });
   const [lower, setLower] = useState({ name: "", geo: null });
@@ -1313,10 +1320,61 @@ export default function App() {
   };
 
   // the buttons in the Clean Model tab (Clean Model, Generate Trimline, Trim Model, Add Base)
+  // const handleToolClick = (tool) => {
+  //   if (busy) return;
+  //   if (tool === "Clean Model") handleCleanModel();
+  // };
+
+
+
+  // Generate Trimline / Trim Model / Add Base: runs the new exe on the backend
+  const runNewExeCommand = async (commandKey) => {
+    if (!upper.geo || !lower.geo) {
+      setProgress(null);
+      setMessage("Please upload both Upper and Lower scan models first");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("");
+    setProgress({ percent: 0, label: "Starting..." });
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/new-exe/${commandKey}`, { method: "POST" });
+      const started = await res.json();
+      if (!res.ok) throw new Error(started.message);
+
+      const job = await waitForJob(`${BACKEND_URL}/api/new-exe/status`);
+
+      // the files created or changed by the exe (also printed in the backend terminal)
+      console.log(`${commandKey} output files:`, job.report);
+
+      setTimeout(() => setProgress(null), 2000);
+    } catch (err) {
+      setProgress(null);
+      setMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // the buttons in the Clean Model tab (Clean Model, Generate Trimline, Trim Model, Add Base)
   const handleToolClick = (tool) => {
     if (busy) return;
     if (tool === "Clean Model") handleCleanModel();
+    else if (NEW_EXE_COMMANDS[tool]) runNewExeCommand(NEW_EXE_COMMANDS[tool]);
   };
+
+
+
+
+
+
+
+
+
+
+
 
 
 
