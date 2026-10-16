@@ -1090,11 +1090,19 @@ import TopBar from "./TopBar.jsx";
 import Viewer from "./Viewer.jsx";
 import VisibilityButtons from "./VisibilityButtons.jsx";
 import { parseStl } from "./stlUtils.js";
-import { loadLatCurves, loadStlParts, saveLatCurve } from "./latUtils.js";
+// import { loadLatCurves, loadStlParts, saveLatCurve } from "./latUtils.js";
+
+// import { loadLatCurves, loadStlParts, saveLatCurve, loadPointsFile, loadStlFile } from "./latUtils.js";
+
+import { loadLatCurves, loadStlParts, saveLatCurve, loadPointsFile, loadStlFile, loadToothLabels } from "./latUtils.js";
 
 const BACKEND_URL = "http://localhost:5174";
 const NO_CURVES = { upper: [], lower: [] };
 const ALL_VISIBLE = { upperTeeth: true, upperGum: true, lowerTeeth: true, lowerGum: true };
+
+const NO_RESULT = { upper: null, lower: null };
+
+const NO_LABELS = { upper: [], lower: [] };
 
 // button text in the Clean Model tab -> command sent to the backend
 const NEW_EXE_COMMANDS = {
@@ -1126,6 +1134,15 @@ export default function App() {
   const [segVisible, setSegVisible] = useState(ALL_VISIBLE);
   const toggleSeg = (key) => setSegVisible((prev) => ({ ...prev, [key]: !prev[key] }));
 
+
+  // results of Generate Trimline (list of points) and Trim Model / Add Base ({ kind, geo })
+  const [trimlines, setTrimlines] = useState(NO_RESULT);
+  const [resultMeshes, setResultMeshes] = useState(NO_RESULT);
+
+    // tooth number labels after Segment: [{ id: "11", a: Vector3, b: Vector3 }, ...] for each jaw
+  const [toothLabels, setToothLabels] = useState(NO_LABELS);
+
+
   // dragging of one editable point
   const dragRef = useRef(null); // { jaw, id, index, moved }
   const [dragging, setDragging] = useState(false);
@@ -1143,7 +1160,13 @@ export default function App() {
     // a new scan: remove the old LAT and the old separated parts of that jaw
     setLatCurves((prev) => ({ ...prev, [type]: [] }));
     setSegParts((prev) => ({ ...prev, [type]: null }));
+
+    setToothLabels((prev) => ({ ...prev, [type]: [] }));
     setSegVisible(ALL_VISIBLE);
+
+      setTrimlines((prev) => ({ ...prev, [type]: null }));
+      setResultMeshes((prev) => ({ ...prev, [type]: null }));
+
     setMessage("");
     setProgress(null);
 
@@ -1201,8 +1224,13 @@ export default function App() {
         lower: await loadLatCurves(BACKEND_URL, "lower", csv.lower || [], stamp),
       });
       setSegParts({ upper: null, lower: null }); // back to the raw scans
+      setToothLabels(NO_LABELS);
       setSegVisible(ALL_VISIBLE);
       setShowSplines(true);
+
+
+      setTrimlines(NO_RESULT);
+      setResultMeshes(NO_RESULT);
 
       // keep the green "completed" bar for 2 seconds, then hide it
       setTimeout(() => setProgress(null), 2000);
@@ -1245,6 +1273,17 @@ export default function App() {
         lower: await loadStlParts(BACKEND_URL, "lower", stl.lower || [], stamp),
       });
       setSegVisible(ALL_VISIBLE); // the four buttons start with everything visible
+
+
+
+
+      
+      // the tooth number labels (two points per tooth, from the TeethNumber exe)
+      const numbers = job.numberFiles || {};
+      setToothLabels({
+        upper: await loadToothLabels(BACKEND_URL, "upper", numbers.upper || [], stamp),
+        lower: await loadToothLabels(BACKEND_URL, "lower", numbers.lower || [], stamp),
+      });
 
       setTimeout(() => setProgress(null), 2000);
     } catch (err) {
@@ -1302,6 +1341,12 @@ export default function App() {
       setLatCurves({ upper: [], lower: [] });
       setShowSplines(true);
 
+
+      setTrimlines(NO_RESULT);
+      setResultMeshes(NO_RESULT);
+
+      setToothLabels(NO_LABELS);
+
       // show the separated gum and teeth (made by the segmenter that ran after the cleaning)
       const stl = job.stlFiles || {};
       setSegParts({
@@ -1344,10 +1389,42 @@ export default function App() {
       const started = await res.json();
       if (!res.ok) throw new Error(started.message);
 
-      const job = await waitForJob(`${BACKEND_URL}/api/new-exe/status`);
+      // const job = await waitForJob(`${BACKEND_URL}/api/new-exe/status`);
+
+      // the files created or changed by the exe (also printed in the backend terminal)
+      // console.log(`${commandKey} output files:`, job.report);
+
+
+
+        const job = await waitForJob(`${BACKEND_URL}/api/new-exe/status`);
 
       // the files created or changed by the exe (also printed in the backend terminal)
       console.log(`${commandKey} output files:`, job.report);
+
+      // show the result in the 3D view
+      const stamp = Date.now();
+      const missing = [];
+      for (const jaw of ["upper", "lower"]) {
+        const rel = job.files ? job.files[jaw] : null;
+        if (!rel) {
+          missing.push(jaw);
+          continue;
+        }
+        const url = `${BACKEND_URL}/files/${jaw}/${rel}?t=${stamp}`;
+
+        if (commandKey === "GenerateTrimline") {
+          const points = await loadPointsFile(url);
+          setTrimlines((prev) => ({ ...prev, [jaw]: points }));
+        } else {
+          const geo = await loadStlFile(url);
+          const kind = commandKey === "TrimModel" ? "trimModel" : "base";
+          setResultMeshes((prev) => ({ ...prev, [jaw]: { kind, geo } }));
+        }
+      }
+      if (missing.length > 0) {
+        setMessage(`Result file not found for: ${missing.join(", ")}`);
+      }
+
 
       setTimeout(() => setProgress(null), 2000);
     } catch (err) {
@@ -1452,6 +1529,11 @@ export default function App() {
           showUpper={showUpper}
           showLower={showLower}
           segVisible={segVisible}
+
+          trimlines={trimlines}
+          resultMeshes={resultMeshes}
+          toothLabels={toothLabels}
+
           latCurves={showSplines ? latCurves : NO_CURVES}
           dragging={dragging}
           onStartDrag={startDrag}

@@ -236,3 +236,67 @@ export async function loadStlParts(backendUrl, jaw, fileNames, stamp) {
     })
   );
 }
+
+
+
+// downloads a CSV file with "x,y,z" lines and returns the points
+export async function loadPointsFile(url) {
+  const res = await fetch(url);
+  return parseLatCsv(await res.text());
+}
+
+// downloads an STL file and returns its geometry
+export async function loadStlFile(url) {
+  const res = await fetch(url);
+  return parseStl(await res.arrayBuffer());
+}
+
+
+
+
+// one label file: two points (x,y,z) -> { a, b } or null
+// accepted: two lines "x,y,z", or one line with six numbers. Anything else is skipped.
+export function parseLabelFile(text) {
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .trim()
+        .split(/[,;\s]+/)
+        .filter((t) => t !== "")
+        .map(Number)
+    )
+    .filter((r) => r.length >= 3 && r.every(Number.isFinite));
+
+  if (rows.length === 2) {
+    return {
+      a: new THREE.Vector3(rows[0][0], rows[0][1], rows[0][2]),
+      b: new THREE.Vector3(rows[1][0], rows[1][1], rows[1][2]),
+    };
+  }
+  if (rows.length === 1 && rows[0].length >= 6) {
+    return {
+      a: new THREE.Vector3(rows[0][0], rows[0][1], rows[0][2]),
+      b: new THREE.Vector3(rows[0][3], rows[0][4], rows[0][5]),
+    };
+  }
+  return null;
+}
+
+// downloads the label csv files of one jaw -> [{ id: "11", a: Vector3, b: Vector3 }, ...]
+export async function loadToothLabels(backendUrl, jaw, files, stamp) {
+  const labels = [];
+
+  for (const rel of files) {
+    const fileName = rel.split("/").pop();
+    // tooth number (11-18, 21-28, 31-38, 41-48) from the file name
+    const match = fileName.match(/(^|\D)([1-4][1-8])(\D|$)/);
+    if (!match) continue;
+
+    const res = await fetch(`${backendUrl}/files/${jaw}/${rel}?t=${stamp}`);
+    const line = parseLabelFile(await res.text());
+    if (line) labels.push({ id: match[2], ...line });
+  }
+
+  return labels;
+}

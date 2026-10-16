@@ -822,14 +822,41 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
-import { TrackballControls } from "@react-three/drei";
+// import { TrackballControls } from "@react-three/drei";
+import { TrackballControls, Line, Html } from "@react-three/drei";
 
 // ---- Colors and sizes ----
-const JAW_COLOR = "#f4a6b8"; // pink raw scan
+const JAW_COLOR = "rgb(255, 255, 255)"; // pink raw scan
 const GUM_COLOR = "#D47575"; // gum after Segment
 const TEETH_COLOR = "#F6E5DF"; // teeth after Segment
-const LINE_COLOR = "#00e5ff"; // LAT spline
-const HANDLE_COLOR = "#ffd54a"; // editable points
+const LINE_COLOR = "rgb(0, 229, 255)"; // LAT spline
+const HANDLE_COLOR = "#4a5cff"; // editable points
+
+const TRIMLINE_COLOR = "#00ff44d6"; // trimline (Generate Trimline)
+const TRIMLINE_RADIUS = 0.15; // thickness of the trimline (mm)
+const TRIM_MODEL_COLOR = "rgb(255, 255, 255)"; // Trim Model result
+const BASE_MODEL_COLOR = "rgb(255, 255, 255)"; // Add Base result
+
+
+const LABEL_COLOR = "#705bd1"; // line and bubble of the tooth numbers
+
+// one color for each tooth position (1 to 8); the other side of the jaw is a bit darker
+const TOOTH_PALETTE = ["#5b8be0", "#a37be0", "#e875b4", "#6cc04a", "#35a7a3", "#e8845f", "#4a4fb5", "#9a8a5a"];
+
+// color of one tooth from its file name, e.g. "11.stl"
+function toothColor(fileName) {
+  const m = fileName.match(/(\d)(\d)/);
+  if (!m) return TEETH_COLOR;
+  const quadrant = Number(m[1]);
+  const position = Number(m[2]);
+  const color = new THREE.Color(TOOTH_PALETTE[(position + 7) % 8]);
+  if (quadrant === 2 || quadrant === 3) color.multiplyScalar(0.8);
+  return color;
+}
+
+
+
+
 const TUBE_RADIUS = 0.08; // thickness of the spline line (mm)
 const HANDLE_RADIUS = 0.3; // size of the editable points (mm)
 const SPLINE_SAMPLES = 200; // smoothness of the spline
@@ -846,7 +873,7 @@ const meshRaycast = THREE.Mesh.prototype.raycast; // normal picking
 const isGum = (fileName) => fileName.toLowerCase().includes("gum");
 
 // ---------------- One jaw: the raw scan, or the separated gum and teeth ----------------
-function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
+function Jaw({ geo, parts, colored, showTeeth, showGum, active, dragging, onMoveDrag }) {
   // after Segment: gum and every tooth with their own color and their own visibility
   if (parts && parts.length > 0) {
     return (
@@ -857,7 +884,10 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
             geometry={p.geo}
             visible={isGum(p.name) ? showGum : showTeeth}
           >
-            <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} />
+            {/* <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} /> */}
+              <meshStandardMaterial
+              color={isGum(p.name) ? GUM_COLOR : colored ? toothColor(p.name) : TEETH_COLOR}
+            />
           </mesh>
         ))}
       </>
@@ -950,6 +980,106 @@ function LatCurves({ jaw, curves, dragging, onStartDrag }) {
   );
 }
 
+// ---------------- The trimline: a curve along the gum ----------------
+function Trimline({ points }) {
+  const geometry = useMemo(() => {
+    if (!points || points.length < 2) return null;
+
+    // thin out very long lists, so the tube stays light (the last point is kept)
+    const step = Math.max(1, Math.ceil(points.length / 600));
+    const pts = points.filter((_, i) => i % step === 0);
+    const last = points[points.length - 1];
+    if (pts[pts.length - 1] !== last) pts.push(last);
+    if (pts.length < 2) return null;
+
+    // closed if the curve ends where it starts
+    const closed = pts.length > 3 && pts[0].distanceTo(last) < 0.5;
+    const curve = new THREE.CatmullRomCurve3(pts, closed, "centripetal");
+    return new THREE.TubeGeometry(curve, pts.length * 2, TRIMLINE_RADIUS, 6, closed);
+  }, [points]);
+
+  if (!geometry) return null;
+
+  return (
+    <mesh geometry={geometry} renderOrder={12} raycast={noRaycast}>
+      <meshBasicMaterial color={TRIMLINE_COLOR} />
+    </mesh>
+  );
+}
+
+// ---------------- Result of Trim Model or Add Base: a surface drawn on top ----------------
+function ResultMesh({ result }) {
+  if (!result) return null;
+
+  const color = result.kind === "trimModel" ? TRIM_MODEL_COLOR : BASE_MODEL_COLOR;
+
+  return (
+    <mesh geometry={result.geo}>
+      <meshStandardMaterial
+        color={color}
+        // pulled a little towards the camera, so it wins over the surface below it
+        polygonOffset
+        polygonOffsetFactor={-2}
+        polygonOffsetUnits={-2}
+      />
+    </mesh>
+  );
+}
+
+// ---------------- Tooth number labels: a line from the tooth to a round bubble ----------------
+function ToothLabels({ labels, parts, show }) {
+  if (!show || !labels || labels.length === 0) return null;
+
+  return (
+    <>
+      {labels.map((l) => {
+        // the point nearer to the center of the tooth is the tooth end; the other gets the bubble
+        let tooth = l.a;
+        let bubble = l.b;
+        const part = parts ? parts.find((p) => p.name.replace(/\.stl$/i, "") === l.id) : null;
+        if (part && part.geo && part.geo.boundingBox) {
+          const center = part.geo.boundingBox.getCenter(new THREE.Vector3());
+          if (l.b.distanceTo(center) < l.a.distanceTo(center)) {
+            tooth = l.b;
+            bubble = l.a;
+          }
+        }
+
+        return (
+          <group key={l.id}>
+            <Line points={[tooth, bubble]} color={LABEL_COLOR} lineWidth={2} />
+            <Html position={bubble} center style={{ pointerEvents: "none" }}>
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: LABEL_COLOR,
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  userSelect: "none",
+                }}
+              >
+                {l.id}
+              </div>
+            </Html>
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
+
+
+
+
+
+
 // Turns the model rotation off while a point is dragged, and ends the drag
 // when the mouse button is released
 function DragController({ dragging, onEndDrag }) {
@@ -1012,6 +1142,9 @@ export default function Viewer({
   showUpper,
   showLower,
   segVisible,
+  trimlines,
+  resultMeshes,
+  toothLabels,
   latCurves,
   dragging,
   onStartDrag,
@@ -1031,8 +1164,10 @@ export default function Viewer({
       {/* the scans (the camera fits to this group) */}
       <group ref={modelRef}>
         <group visible={showUpper}>
+           <group visible={resultMeshes.upper?.kind !== "base"}>
           <Jaw
             geo={upperGeo}
+            colored={toothLabels.upper.length > 0}
             parts={upperParts}
             showTeeth={segVisible.upperTeeth}
             showGum={segVisible.upperGum}
@@ -1040,10 +1175,22 @@ export default function Viewer({
             dragging={dragging}
             onMoveDrag={onMoveDrag}
           />
+          </group>
+
+          <Trimline points={trimlines.upper} />
+          <ResultMesh result={resultMeshes.upper} />
+          <ToothLabels
+         labels={toothLabels.upper}
+         parts={upperParts}
+         show={showUpper && segVisible.upperTeeth}
+         />
+
         </group>
         <group visible={showLower}>
+        <group visible={resultMeshes.lower?.kind !== "base"}>
           <Jaw
             geo={lowerGeo}
+            colored={toothLabels.lower.length > 0}
             parts={lowerParts}
             showTeeth={segVisible.lowerTeeth}
             showGum={segVisible.lowerGum}
@@ -1051,6 +1198,16 @@ export default function Viewer({
             dragging={dragging}
             onMoveDrag={onMoveDrag}
           />
+          </group>
+         
+          <Trimline points={trimlines.lower} />
+          <ResultMesh result={resultMeshes.lower} />
+           <ToothLabels
+         labels={toothLabels.lower}
+         parts={lowerParts}
+        show={showLower && segVisible.lowerTeeth}
+        />
+
         </group>
       </group>
 
