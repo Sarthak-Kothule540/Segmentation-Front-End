@@ -1141,6 +1141,7 @@ export default function App() {
 
     // tooth number labels after Segment: [{ id: "11", a: Vector3, b: Vector3 }, ...] for each jaw
   const [toothLabels, setToothLabels] = useState(NO_LABELS);
+       const [showNumbers, setShowNumbers] = useState(true);
 
 
   // dragging of one editable point
@@ -1249,6 +1250,7 @@ export default function App() {
       setMessage("Please run Identify LAT first");
       return;
     }
+     setShowNumbers(true);
 
     setShowSplines(false); // the splines disappear as soon as Segment is clicked
     setBusy(true);
@@ -1345,14 +1347,19 @@ export default function App() {
       setTrimlines(NO_RESULT);
       setResultMeshes(NO_RESULT);
 
-      setToothLabels(NO_LABELS);
+      // setToothLabels(NO_LABELS);
 
-      // show the separated gum and teeth (made by the segmenter that ran after the cleaning)
-      const stl = job.stlFiles || {};
-      setSegParts({
-        upper: await loadStlParts(BACKEND_URL, "upper", stl.upper || [], stamp),
-        lower: await loadStlParts(BACKEND_URL, "lower", stl.lower || [], stamp),
-      });
+      // // show the separated gum and teeth (made by the segmenter that ran after the cleaning)
+      // const stl = job.stlFiles || {};
+      // setSegParts({
+      //   upper: await loadStlParts(BACKEND_URL, "upper", stl.upper || [], stamp),
+      //   lower: await loadStlParts(BACKEND_URL, "lower", stl.lower || [], stamp),
+      // });
+      // setSegVisible(ALL_VISIBLE);
+
+       setToothLabels(NO_LABELS);
+      // show the whole cleaned scan (unsegmented), not the separated gum and teeth
+      setSegParts({ upper: null, lower: null });
       setSegVisible(ALL_VISIBLE);
 
       setTimeout(() => setProgress(null), 2000);
@@ -1539,6 +1546,7 @@ export default function App() {
           onStartDrag={startDrag}
           onMoveDrag={moveDrag}
           onEndDrag={endDrag}
+          showNumbers={showNumbers}
         />
 
         <VisibilityButtons
@@ -1552,6 +1560,9 @@ export default function App() {
           segmentedLower={!!segParts.lower}
           segVisible={segVisible}
           onToggleSeg={toggleSeg}
+          hasNumbers={toothLabels.upper.length + toothLabels.lower.length > 0}
+           showNumbers={showNumbers}
+            onToggleNumbers={() => setShowNumbers((v) => !v)}
         />
       </div>
     </div>

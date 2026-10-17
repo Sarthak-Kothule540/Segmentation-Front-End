@@ -826,9 +826,9 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { TrackballControls, Line, Html } from "@react-three/drei";
 
 // ---- Colors and sizes ----
-const JAW_COLOR = "rgb(255, 255, 255)"; // pink raw scan
+const JAW_COLOR = "#F7E0C5"; //  raw scan
 const GUM_COLOR = "#D47575"; // gum after Segment
-const TEETH_COLOR = "#F6E5DF"; // teeth after Segment
+const TEETH_COLOR = "#EEDBD8"; // teeth after Segment
 const LINE_COLOR = "rgb(0, 229, 255)"; // LAT spline
 const HANDLE_COLOR = "#4a5cff"; // editable points
 
@@ -885,9 +885,10 @@ function Jaw({ geo, parts, colored, showTeeth, showGum, active, dragging, onMove
             visible={isGum(p.name) ? showGum : showTeeth}
           >
             {/* <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} /> */}
-              <meshStandardMaterial
+              {/* <meshStandardMaterial
               color={isGum(p.name) ? GUM_COLOR : colored ? toothColor(p.name) : TEETH_COLOR}
-            />
+            /> */}
+                        <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} />
           </mesh>
         ))}
       </>
@@ -1145,6 +1146,7 @@ export default function Viewer({
   trimlines,
   resultMeshes,
   toothLabels,
+  showNumbers,
   latCurves,
   dragging,
   onStartDrag,
@@ -1182,7 +1184,9 @@ export default function Viewer({
           <ToothLabels
          labels={toothLabels.upper}
          parts={upperParts}
-         show={showUpper && segVisible.upperTeeth}
+        //  show={showUpper && segVisible.upperTeeth}
+        show={showUpper && segVisible.upperTeeth && showNumbers}
+
          />
 
         </group>
@@ -1205,7 +1209,7 @@ export default function Viewer({
            <ToothLabels
          labels={toothLabels.lower}
          parts={lowerParts}
-        show={showLower && segVisible.lowerTeeth}
+        show={showLower && segVisible.lowerTeeth && showNumbers}
         />
 
         </group>

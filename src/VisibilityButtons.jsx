@@ -155,6 +155,9 @@ export default function VisibilityButtons({
   segmentedLower, // true after Segment has separated the lower jaw
   segVisible, // { upperTeeth, upperGum, lowerTeeth, lowerGum }
   onToggleSeg, // (key) => ...
+  hasNumbers, // true when the tooth numbers exist (after Segment)
+  showNumbers,
+  onToggleNumbers,
 }) {
   const segmented = segmentedUpper || segmentedLower;
 
@@ -193,6 +196,14 @@ export default function VisibilityButtons({
           />
         </>
       )}
+       
+        {/* appears after Segment, when the tooth numbers exist */}
+         {hasNumbers && (
+           <EyeButton label="Teeth Numbers" visible={showNumbers} onClick={onToggleNumbers} />
+         )}
+
+
+
     </div>
   );
 }
