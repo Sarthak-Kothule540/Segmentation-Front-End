@@ -1432,6 +1432,7 @@ export default function App() {
           const points = await loadPointsFile(url);
           // 32 editable points; "rel" is the place of Trimline.csv, needed for saving
           setTrimlines((prev) => ({ ...prev, [jaw]: makeTrimlineData(points, rel) }));
+          setResultMeshes((prev) => ({ ...prev, [jaw]: null })); // a new trimline replaces an old Trim Model / Add Base result
         } else {
           const geo = await loadStlFile(url);
           const kind = commandKey === "TrimModel" ? "trimModel" : "base";
@@ -1549,11 +1550,14 @@ export default function App() {
         if (!trimline) return;
         const result = await saveTrimline(BACKEND_URL, d.jaw, trimline);
         setMessage(result.message);
+        setTimeout(() => setMessage((m) => (m === result.message ? "" : m)), 2000);
+
       } else {
         const curve = latCurvesRef.current[d.jaw].find((c) => c.id === d.id);
         if (!curve) return;
         const result = await saveLatCurve(BACKEND_URL, d.jaw, d.id, curve.points);
         setMessage(result.message);
+         setTimeout(() => setMessage((m) => (m === result.message ? "" : m)), 2000);
       }
     } catch (err) {
       setMessage(`Could not save: ${err.message}`);

@@ -821,9 +821,10 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree} from "@react-three/fiber";
 // import { TrackballControls } from "@react-three/drei";
 import { TrackballControls, Line, Html } from "@react-three/drei";
+
 
 // ---- Colors and sizes ----
 const JAW_COLOR = "#F7E0C5"; //  raw scan
@@ -832,7 +833,7 @@ const TEETH_COLOR = "#EEDBD8"; // teeth after Segment
 const LINE_COLOR = "rgb(0, 229, 255)"; // LAT spline
 const HANDLE_COLOR = "#4a5cff"; // editable points
 
-const TRIMLINE_COLOR = "#00ff44d6"; // trimline (Generate Trimline)
+const TRIMLINE_COLOR = "#00ff44"; // trimline (Generate Trimline)
 const TRIMLINE_RADIUS = 0.15; // thickness of the trimline (mm)
 
 const TRIMLINE_HANDLE_COLOR = "#ff7a00"; // orange: the editable points of the trimline
@@ -1237,6 +1238,7 @@ function FrontView({ targetRef, fitKey }) {
   return null;
 }
 
+
 export default function Viewer({
   upperGeo,
   lowerGeo,
@@ -1262,9 +1264,11 @@ export default function Viewer({
 
   return (
     <Canvas camera={{ position: [0, -150, 0], up: CAMERA_UP, fov: 45, near: 0.1, far: 5000 }}>
+       
       <ambientLight intensity={0.6} />
       <directionalLight position={[50, 50, 50]} intensity={1} />
-      <directionalLight position={[-50, -50, -50]} intensity={0.5} />
+      <directionalLight position={[-50, -50, -50]} intensity={0.5} /> 
+           
 
       {/* the scans (the camera fits to this group) */}
       <group ref={modelRef}>
@@ -1283,7 +1287,8 @@ export default function Viewer({
           </group>
 
           {/* <Trimline points={trimlines.upper} /> */}
-            <EditableTrimline jaw="upper" trimline={trimlines.upper} dragging={dragging} onStartTrimDrag={onStartTrimDrag} />
+            {/* <EditableTrimline jaw="upper" trimline={trimlines.upper} dragging={dragging} onStartTrimDrag={onStartTrimDrag} /> */}
+            <EditableTrimline jaw="upper" trimline={resultMeshes.upper ? null : trimlines.upper} dragging={dragging} onStartTrimDrag={onStartTrimDrag} />
           <ResultMesh result={resultMeshes.upper} />
           <ToothLabels
          labels={toothLabels.upper}
@@ -1309,7 +1314,8 @@ export default function Viewer({
           </group>
          
           {/* <Trimline points={trimlines.lower} /> */}
-            <EditableTrimline jaw="lower" trimline={trimlines.lower} dragging={dragging} onStartTrimDrag={onStartTrimDrag} />
+            {/* <EditableTrimline jaw="lower" trimline={trimlines.lower} dragging={dragging} onStartTrimDrag={onStartTrimDrag} /> */}
+            <EditableTrimline jaw="lower" trimline={resultMeshes.lower ? null : trimlines.lower} dragging={dragging} onStartTrimDrag={onStartTrimDrag} />
           <ResultMesh result={resultMeshes.lower} />
            <ToothLabels
          labels={toothLabels.lower}
