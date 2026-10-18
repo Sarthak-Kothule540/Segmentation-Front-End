@@ -149,7 +149,7 @@ import * as THREE from "three";
 import { parseStl } from "./stlUtils.js";
 
 // maximum number of editable points (handles) for each tooth curve
-export const MAX_HANDLES = 20;
+export const MAX_HANDLES = 10;
 
 // number of points written to the CSV when an edited curve is saved
 export const SAVE_SAMPLES = 80;
@@ -299,4 +299,46 @@ export async function loadToothLabels(backendUrl, jaw, files, stamp) {
   }
 
   return labels;
+}
+
+
+// number of editable points on the trimline of one jaw
+export const TRIMLINE_HANDLES = 64;
+
+// Trimline.csv points -> { points (the editable points), total, closed, file } or null
+export function makeTrimlineData(allPoints, file, handles = TRIMLINE_HANDLES) {
+  if (!allPoints || allPoints.length < 4) return null;
+
+  // closed if the line ends where it starts
+  const closed = allPoints[0].distanceTo(allPoints[allPoints.length - 1]) < 0.5;
+  const pts = closed ? allPoints.slice(0, -1) : allPoints; // the last point repeats the first
+
+  const n = pts.length;
+  const count = Math.min(handles, n);
+  const points = [];
+  for (let i = 0; i < count; i++) {
+    const index = closed ? Math.floor((i * n) / count) : Math.round((i * (n - 1)) / (count - 1));
+    points.push(pts[index].clone());
+  }
+
+  return { points, total: allPoints.length, closed, file };
+}
+
+// edited trimline -> CSV text, with the same number of points as the original file
+export function trimlineToCsv(trimline) {
+  const curve = new THREE.CatmullRomCurve3(trimline.points, trimline.closed, "centripetal");
+  const pts = curve.getPoints(Math.max(trimline.total - 1, 1));
+  return pts.map((p) => `${p.x},${p.y},${p.z}`).join("\n") + "\n";
+}
+
+// sends the edited trimline of one jaw to the backend, which overwrites Trimline.csv
+export async function saveTrimline(backendUrl, jaw, trimline) {
+  const res = await fetch(`${backendUrl}/api/save-trimline`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jaw, file: trimline.file, csv: trimlineToCsv(trimline) }),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message);
+  return result;
 }

@@ -1094,7 +1094,7 @@ import { parseStl } from "./stlUtils.js";
 
 // import { loadLatCurves, loadStlParts, saveLatCurve, loadPointsFile, loadStlFile } from "./latUtils.js";
 
-import { loadLatCurves, loadStlParts, saveLatCurve, loadPointsFile, loadStlFile, loadToothLabels } from "./latUtils.js";
+import { loadLatCurves, loadStlParts, saveLatCurve, loadPointsFile, loadStlFile, loadToothLabels, makeTrimlineData, saveTrimline } from "./latUtils.js";
 
 const BACKEND_URL = "http://localhost:5174";
 const NO_CURVES = { upper: [], lower: [] };
@@ -1138,6 +1138,10 @@ export default function App() {
   // results of Generate Trimline (list of points) and Trim Model / Add Base ({ kind, geo })
   const [trimlines, setTrimlines] = useState(NO_RESULT);
   const [resultMeshes, setResultMeshes] = useState(NO_RESULT);
+
+    // always holds the newest trimlines (used while a point is dragged and when it is saved)
+  const trimlinesRef = useRef(trimlines);
+  trimlinesRef.current = trimlines;
 
     // tooth number labels after Segment: [{ id: "11", a: Vector3, b: Vector3 }, ...] for each jaw
   const [toothLabels, setToothLabels] = useState(NO_LABELS);
@@ -1419,9 +1423,15 @@ export default function App() {
         }
         const url = `${BACKEND_URL}/files/${jaw}/${rel}?t=${stamp}`;
 
-        if (commandKey === "GenerateTrimline") {
+        // if (commandKey === "GenerateTrimline") {
+        //   const points = await loadPointsFile(url);
+        //   setTrimlines((prev) => ({ ...prev, [jaw]: points }));
+        // } else {
+
+             if (commandKey === "GenerateTrimline") {
           const points = await loadPointsFile(url);
-          setTrimlines((prev) => ({ ...prev, [jaw]: points }));
+          // 32 editable points; "rel" is the place of Trimline.csv, needed for saving
+          setTrimlines((prev) => ({ ...prev, [jaw]: makeTrimlineData(points, rel) }));
         } else {
           const geo = await loadStlFile(url);
           const kind = commandKey === "TrimModel" ? "trimModel" : "base";
@@ -1466,8 +1476,62 @@ export default function App() {
 
 
   // ---------------- editing of the splines ----------------
+  // const startDrag = (jaw, id, index) => {
+  //   dragRef.current = { jaw, id, index, moved: false };
+  //   setDragging(true);
+  // };
+
+  // // when the mouse button is released: save the edited curve to its csv file
+  // const endDrag = useCallback(async () => {
+  //   const d = dragRef.current;
+  //   dragRef.current = null;
+  //   setDragging(false);
+
+  //   if (!d || !d.moved) return; // nothing was changed
+
+  //   const curve = latCurvesRef.current[d.jaw].find((c) => c.id === d.id);
+  //   if (!curve) return;
+
+  //   try {
+  //     const result = await saveLatCurve(BACKEND_URL, d.jaw, d.id, curve.points);
+  //     setMessage(result.message);
+  //     setTimeout(()=>setMessage(""),2000);
+  //   } catch (err) {
+  //     setMessage(`Could not save ${d.id}.csv: ${err.message}`);
+  //   }
+  // }, []);
+
+  // // moves the dragged point to the surface point under the mouse
+  // const moveDrag = (point) => {
+  //   const d = dragRef.current;
+  //   if (!d) return;
+
+  //   const current = latCurvesRef.current;
+  //   const curve = current[d.jaw].find((c) => c.id === d.id);
+  //   if (!curve) return;
+
+  //   const newPoints = curve.points.map((p, i) => (i === d.index ? point.clone() : p));
+  //   d.moved = true;
+
+  //   // update the ref at once, so a save right after the last move uses the newest points
+  //   latCurvesRef.current = {
+  //     ...current,
+  //     [d.jaw]: current[d.jaw].map((c) => (c.id === d.id ? { ...c, points: newPoints } : c)),
+  //   };
+  //   setLatCurves(latCurvesRef.current);
+  // };
+
+
+    // ---------------- editing of the splines and of the trimline ----------------
+  // a LAT point of one tooth
   const startDrag = (jaw, id, index) => {
-    dragRef.current = { jaw, id, index, moved: false };
+    dragRef.current = { kind: "lat", jaw, id, index, moved: false };
+    setDragging(true);
+  };
+
+  // a point of the trimline
+  const startTrimDrag = (jaw, index) => {
+    dragRef.current = { kind: "trim", jaw, index, moved: false };
     setDragging(true);
   };
 
@@ -1479,15 +1543,20 @@ export default function App() {
 
     if (!d || !d.moved) return; // nothing was changed
 
-    const curve = latCurvesRef.current[d.jaw].find((c) => c.id === d.id);
-    if (!curve) return;
-
     try {
-      const result = await saveLatCurve(BACKEND_URL, d.jaw, d.id, curve.points);
-      setMessage(result.message);
-      setTimeout(()=>setMessage(""),2000);
+      if (d.kind === "trim") {
+        const trimline = trimlinesRef.current[d.jaw];
+        if (!trimline) return;
+        const result = await saveTrimline(BACKEND_URL, d.jaw, trimline);
+        setMessage(result.message);
+      } else {
+        const curve = latCurvesRef.current[d.jaw].find((c) => c.id === d.id);
+        if (!curve) return;
+        const result = await saveLatCurve(BACKEND_URL, d.jaw, d.id, curve.points);
+        setMessage(result.message);
+      }
     } catch (err) {
-      setMessage(`Could not save ${d.id}.csv: ${err.message}`);
+      setMessage(`Could not save: ${err.message}`);
     }
   }, []);
 
@@ -1496,6 +1565,19 @@ export default function App() {
     const d = dragRef.current;
     if (!d) return;
 
+    // a point of the trimline
+    if (d.kind === "trim") {
+      const trimline = trimlinesRef.current[d.jaw];
+      if (!trimline) return;
+
+      d.moved = true;
+      const newPoints = trimline.points.map((p, i) => (i === d.index ? point.clone() : p));
+      trimlinesRef.current = { ...trimlinesRef.current, [d.jaw]: { ...trimline, points: newPoints } };
+      setTrimlines(trimlinesRef.current);
+      return;
+    }
+
+    // a LAT point of one tooth
     const current = latCurvesRef.current;
     const curve = current[d.jaw].find((c) => c.id === d.id);
     if (!curve) return;
@@ -1544,6 +1626,7 @@ export default function App() {
           latCurves={showSplines ? latCurves : NO_CURVES}
           dragging={dragging}
           onStartDrag={startDrag}
+          onStartTrimDrag={startTrimDrag}
           onMoveDrag={moveDrag}
           onEndDrag={endDrag}
           showNumbers={showNumbers}

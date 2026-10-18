@@ -834,6 +834,10 @@ const HANDLE_COLOR = "#4a5cff"; // editable points
 
 const TRIMLINE_COLOR = "#00ff44d6"; // trimline (Generate Trimline)
 const TRIMLINE_RADIUS = 0.15; // thickness of the trimline (mm)
+
+const TRIMLINE_HANDLE_COLOR = "#ff7a00"; // orange: the editable points of the trimline
+const TRIMLINE_HANDLE_RADIUS = 0.35; // size of those points (mm)
+
 const TRIM_MODEL_COLOR = "rgb(255, 255, 255)"; // Trim Model result
 const BASE_MODEL_COLOR = "rgb(255, 255, 255)"; // Add Base result
 
@@ -873,24 +877,86 @@ const meshRaycast = THREE.Mesh.prototype.raycast; // normal picking
 const isGum = (fileName) => fileName.toLowerCase().includes("gum");
 
 // ---------------- One jaw: the raw scan, or the separated gum and teeth ----------------
-function Jaw({ geo, parts, colored, showTeeth, showGum, active, dragging, onMoveDrag }) {
-  // after Segment: gum and every tooth with their own color and their own visibility
+// function Jaw({ geo, parts, colored, showTeeth, showGum, active, dragging, onMoveDrag }) {
+//   // after Segment: gum and every tooth with their own color and their own visibility
+//   if (parts && parts.length > 0) {
+//     return (
+//       <>
+//         {parts.map((p) => (
+//           <mesh
+//             key={p.name}
+//             geometry={p.geo}
+//             visible={isGum(p.name) ? showGum : showTeeth}
+//           >
+//             {/* <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} /> */}
+//               {/* <meshStandardMaterial
+//               color={isGum(p.name) ? GUM_COLOR : colored ? toothColor(p.name) : TEETH_COLOR}
+//             /> */}
+//             <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} />
+//           </mesh>
+//         ))}
+//       </>
+//     );
+//   }
+
+//   if (!geo) return null;
+
+//   // before Segment: the raw scan
+//   return (
+//     <mesh
+//       geometry={geo}
+//       // the scan blocks clicks on points that are behind it
+//       onPointerDown={(e) => e.stopPropagation()}
+//       // while a point is dragged, it follows the surface under the mouse
+//       onPointerMove={
+//         dragging && active
+//           ? (e) => {
+//               e.stopPropagation();
+//               onMoveDrag(e.point);
+//             }
+//           : undefined
+//       }
+//     >
+//       <meshStandardMaterial
+//         color={JAW_COLOR}
+//         polygonOffset
+//         polygonOffsetFactor={1}
+//         polygonOffsetUnits={1}
+//       />
+//     </mesh>
+//   );
+// }
+
+
+
+function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
+  // while a point is dragged, it follows the surface under the mouse
+  const moveHandler =
+    dragging && active
+      ? (e) => {
+          e.stopPropagation();
+          onMoveDrag(e.point);
+        }
+      : undefined;
+
+  // after Segment: gum and every tooth with their own visibility
   if (parts && parts.length > 0) {
     return (
       <>
-        {parts.map((p) => (
-          <mesh
-            key={p.name}
-            geometry={p.geo}
-            visible={isGum(p.name) ? showGum : showTeeth}
-          >
-            {/* <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} /> */}
-              {/* <meshStandardMaterial
-              color={isGum(p.name) ? GUM_COLOR : colored ? toothColor(p.name) : TEETH_COLOR}
-            /> */}
-                        <meshStandardMaterial color={isGum(p.name) ? GUM_COLOR : TEETH_COLOR} />
-          </mesh>
-        ))}
+        {parts.map((p) => {
+          const gum = isGum(p.name);
+          const visible = gum ? showGum : showTeeth;
+          return (
+            <mesh
+              key={p.name}
+              geometry={p.geo}
+              visible={visible}
+              onPointerMove={visible ? moveHandler : undefined}
+            >
+              <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} />
+            </mesh>
+          );
+        })}
       </>
     );
   }
@@ -903,15 +969,7 @@ function Jaw({ geo, parts, colored, showTeeth, showGum, active, dragging, onMove
       geometry={geo}
       // the scan blocks clicks on points that are behind it
       onPointerDown={(e) => e.stopPropagation()}
-      // while a point is dragged, it follows the surface under the mouse
-      onPointerMove={
-        dragging && active
-          ? (e) => {
-              e.stopPropagation();
-              onMoveDrag(e.point);
-            }
-          : undefined
-      }
+      onPointerMove={moveHandler}
     >
       <meshStandardMaterial
         color={JAW_COLOR}
@@ -982,31 +1040,75 @@ function LatCurves({ jaw, curves, dragging, onStartDrag }) {
 }
 
 // ---------------- The trimline: a curve along the gum ----------------
-function Trimline({ points }) {
+// function Trimline({ points }) {
+//   const geometry = useMemo(() => {
+//     if (!points || points.length < 2) return null;
+
+//     // thin out very long lists, so the tube stays light (the last point is kept)
+//     const step = Math.max(1, Math.ceil(points.length / 600));
+//     const pts = points.filter((_, i) => i % step === 0);
+//     const last = points[points.length - 1];
+//     if (pts[pts.length - 1] !== last) pts.push(last);
+//     if (pts.length < 2) return null;
+
+//     // closed if the curve ends where it starts
+//     const closed = pts.length > 3 && pts[0].distanceTo(last) < 0.5;
+//     const curve = new THREE.CatmullRomCurve3(pts, closed, "centripetal");
+//     return new THREE.TubeGeometry(curve, pts.length * 2, TRIMLINE_RADIUS, 6, closed);
+//   }, [points]);
+
+//   if (!geometry) return null;
+
+//   return (
+//     <mesh geometry={geometry} renderOrder={12} raycast={noRaycast}>
+//       <meshBasicMaterial color={TRIMLINE_COLOR} />
+//     </mesh>
+//   );
+// }
+
+
+// ---------------- The trimline: a curve along the gum, with editable points ----------------
+function EditableTrimline({ jaw, trimline, dragging, onStartTrimDrag }) {
+  const controls = useThree((state) => state.controls);
+
+  // smooth line through the editable points, drawn as a thin tube
   const geometry = useMemo(() => {
-    if (!points || points.length < 2) return null;
+    if (!trimline || trimline.points.length < 3) return null;
+    const curve = new THREE.CatmullRomCurve3(trimline.points, trimline.closed, "centripetal");
+    return new THREE.TubeGeometry(curve, 400, TRIMLINE_RADIUS, 6, trimline.closed);
+  }, [trimline]);
 
-    // thin out very long lists, so the tube stays light (the last point is kept)
-    const step = Math.max(1, Math.ceil(points.length / 600));
-    const pts = points.filter((_, i) => i % step === 0);
-    const last = points[points.length - 1];
-    if (pts[pts.length - 1] !== last) pts.push(last);
-    if (pts.length < 2) return null;
-
-    // closed if the curve ends where it starts
-    const closed = pts.length > 3 && pts[0].distanceTo(last) < 0.5;
-    const curve = new THREE.CatmullRomCurve3(pts, closed, "centripetal");
-    return new THREE.TubeGeometry(curve, pts.length * 2, TRIMLINE_RADIUS, 6, closed);
-  }, [points]);
-
-  if (!geometry) return null;
+  if (!trimline || !geometry) return null;
 
   return (
-    <mesh geometry={geometry} renderOrder={12} raycast={noRaycast}>
-      <meshBasicMaterial color={TRIMLINE_COLOR} />
-    </mesh>
+    <>
+      <mesh geometry={geometry} renderOrder={12} raycast={noRaycast}>
+        <meshBasicMaterial color={TRIMLINE_COLOR} />
+      </mesh>
+
+      {trimline.points.map((p, i) => (
+        <mesh
+          key={i}
+          position={p}
+          renderOrder={13}
+          // while dragging, the points must not block the mouse
+          raycast={dragging ? noRaycast : meshRaycast}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            if (controls) controls.enabled = false; // stop rotating the model
+            onStartTrimDrag(jaw, i);
+          }}
+          onPointerOver={() => (document.body.style.cursor = "pointer")}
+          onPointerOut={() => (document.body.style.cursor = "default")}
+        >
+          <sphereGeometry args={[TRIMLINE_HANDLE_RADIUS, 12, 12]} />
+          <meshBasicMaterial color={TRIMLINE_HANDLE_COLOR} />
+        </mesh>
+      ))}
+    </>
   );
 }
+
 
 // ---------------- Result of Trim Model or Add Base: a surface drawn on top ----------------
 function ResultMesh({ result }) {
@@ -1150,6 +1252,7 @@ export default function Viewer({
   latCurves,
   dragging,
   onStartDrag,
+  onStartTrimDrag,
   onMoveDrag,
   onEndDrag,
 }) {
@@ -1179,7 +1282,8 @@ export default function Viewer({
           />
           </group>
 
-          <Trimline points={trimlines.upper} />
+          {/* <Trimline points={trimlines.upper} /> */}
+            <EditableTrimline jaw="upper" trimline={trimlines.upper} dragging={dragging} onStartTrimDrag={onStartTrimDrag} />
           <ResultMesh result={resultMeshes.upper} />
           <ToothLabels
          labels={toothLabels.upper}
@@ -1204,7 +1308,8 @@ export default function Viewer({
           />
           </group>
          
-          <Trimline points={trimlines.lower} />
+          {/* <Trimline points={trimlines.lower} /> */}
+            <EditableTrimline jaw="lower" trimline={trimlines.lower} dragging={dragging} onStartTrimDrag={onStartTrimDrag} />
           <ResultMesh result={resultMeshes.lower} />
            <ToothLabels
          labels={toothLabels.lower}
