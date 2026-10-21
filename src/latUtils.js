@@ -149,7 +149,7 @@ import * as THREE from "three";
 import { parseStl } from "./stlUtils.js";
 
 // maximum number of editable points (handles) for each tooth curve
-export const MAX_HANDLES = 10;
+export const MAX_HANDLES = 15;
 
 // number of points written to the CSV when an edited curve is saved
 export const SAVE_SAMPLES = 80;

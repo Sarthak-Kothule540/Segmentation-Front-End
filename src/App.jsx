@@ -1103,6 +1103,37 @@ const ALL_VISIBLE = { upperTeeth: true, upperGum: true, lowerTeeth: true, lowerG
 const NO_RESULT = { upper: null, lower: null };
 
 const NO_LABELS = { upper: [], lower: [] };
+const NO_PARTS = { upper: null, lower: null };
+
+const STEP_ORDER = ["cleanModel", "generateTrimline", "trimModel", "addBase", "identifyLat", "segment"];
+
+const NOT_DONE = {
+  cleanModel: false,
+  identifyLat: false,
+  segment: false,
+  generateTrimline: false,
+  trimModel: false,
+  addBase: false,
+};
+
+
+
+
+// button name used by the backend -> step name
+const COMMAND_TO_STEP = {
+  GenerateTrimline: "generateTrimline",
+  TrimModel: "trimModel",
+  AddBase: "addBase",
+};
+const NEED_SEGMENTER_MESSAGE = "First complete Clean Model or Identify LAT.";
+
+// step that must be finished before this step can run
+const REQUIRED_BEFORE = {
+  trimModel: { step: "generateTrimline", message: "Please do Generate Trimline first." },
+  addBase: { step: "trimModel", message: "Please do Trim Model first." },
+};
+
+
 
 // button text in the Clean Model tab -> command sent to the backend
 const NEW_EXE_COMMANDS = {
@@ -1119,6 +1150,43 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(null); // { percent, label } or null
   const [message, setMessage] = useState("");
+
+  // which buttons already produced a result
+const [doneSteps, setDoneSteps] = useState(NOT_DONE);
+
+// true after Clean Model or Identify LAT finished (the segmenter result exists)
+const [segmenterReady, setSegmenterReady] = useState(false);
+
+// marks a step as done and resets the steps after it
+const markDone = (step) =>
+  setDoneSteps((prev) => {
+    const next = { ...prev };
+    STEP_ORDER.forEach((s, i) => {
+      if (i > STEP_ORDER.indexOf(step)) next[s] = false;
+    });
+    next[step] = true;
+    return next;
+  });
+
+// shows the alert and returns true if the step was already done
+// const alreadyDone = (step) => {
+//   if (doneSteps[step]) {
+//     alert(DONE_MESSAGES[step]);
+//     return true;
+//   }
+//   return false;
+// };
+
+
+// if the step is already done: show its stored result and do not run the exe again
+const showIfDone = (step) => {
+  if (doneSteps[step]) {
+    setView(step);
+    setMessage("");
+    return true;
+  }
+  return false;
+};
 
   // LAT splines: [{ id: "11", points: [Vector3, ...] }, ...] for each jaw
   const [latCurves, setLatCurves] = useState({ upper: [], lower: [] });
@@ -1137,7 +1205,13 @@ export default function App() {
 
   // results of Generate Trimline (list of points) and Trim Model / Add Base ({ kind, geo })
   const [trimlines, setTrimlines] = useState(NO_RESULT);
-  const [resultMeshes, setResultMeshes] = useState(NO_RESULT);
+  // const [resultMeshes, setResultMeshes] = useState(NO_RESULT);
+
+const [trimModelMeshes, setTrimModelMeshes] = useState(NO_RESULT);
+const [baseMeshes, setBaseMeshes] = useState(NO_RESULT);
+
+// which result is shown: "scan" or the name of a step
+const [view, setView] = useState("scan");
 
     // always holds the newest trimlines (used while a point is dragged and when it is saved)
   const trimlinesRef = useRef(trimlines);
@@ -1169,10 +1243,18 @@ export default function App() {
     setToothLabels((prev) => ({ ...prev, [type]: [] }));
     setSegVisible(ALL_VISIBLE);
 
-      setTrimlines((prev) => ({ ...prev, [type]: null }));
-      setResultMeshes((prev) => ({ ...prev, [type]: null }));
+      // setTrimlines((prev) => ({ ...prev, [type]: null }));
+      // setResultMeshes((prev) => ({ ...prev, [type]: null }));
+
+
+   setTrimlines((prev) => ({ ...prev, [type]: null }));
+   setTrimModelMeshes((prev) => ({ ...prev, [type]: null }));
+   setBaseMeshes((prev) => ({ ...prev, [type]: null }));
+   setView("scan");
 
     setMessage("");
+    setDoneSteps(NOT_DONE);
+    setSegmenterReady(false);
     setProgress(null);
 
     try {
@@ -1203,6 +1285,8 @@ export default function App() {
 
   // ---------------- Identify LAT button ----------------
   const handleIdentifyLat = async () => {
+    // if (alreadyDone("identifyLat")) return;
+    if (showIfDone("identifyLat")) return;
     if (!upper.geo || !lower.geo) {
       setProgress(null);
       setMessage("Please upload both Upper and Lower scan models first");
@@ -1234,8 +1318,12 @@ export default function App() {
       setShowSplines(true);
 
 
-      setTrimlines(NO_RESULT);
-      setResultMeshes(NO_RESULT);
+      // setTrimlines(NO_RESULT);
+      // setResultMeshes(NO_RESULT);
+      markDone("identifyLat");
+      setView("identifyLat");
+
+      setSegmenterReady(true);
 
       // keep the green "completed" bar for 2 seconds, then hide it
       setTimeout(() => setProgress(null), 2000);
@@ -1249,6 +1337,8 @@ export default function App() {
 
   // ---------------- Segment button (separates teeth and gum) ----------------
   const handleSegmentTeeth = async () => {
+    // if (alreadyDone("segment")) return;
+    if (showIfDone("segment")) return;
     if (latCurves.upper.length === 0 && latCurves.lower.length === 0) {
       setProgress(null);
       setMessage("Please run Identify LAT first");
@@ -1290,6 +1380,8 @@ export default function App() {
         upper: await loadToothLabels(BACKEND_URL, "upper", numbers.upper || [], stamp),
         lower: await loadToothLabels(BACKEND_URL, "lower", numbers.lower || [], stamp),
       });
+      markDone("segment");
+      setView("segment");
 
       setTimeout(() => setProgress(null), 2000);
     } catch (err) {
@@ -1310,6 +1402,8 @@ export default function App() {
   };
 
   const handleCleanModel = async () => {
+    // if (alreadyDone("cleanModel")) return;
+    if (showIfDone("cleanModel")) return;
     if (!upper.geo || !lower.geo) {
       setProgress(null);
       setMessage("Please upload both Upper and Lower scan models first");
@@ -1349,7 +1443,9 @@ export default function App() {
 
 
       setTrimlines(NO_RESULT);
-      setResultMeshes(NO_RESULT);
+      // setResultMeshes(NO_RESULT);
+      setTrimModelMeshes(NO_RESULT);
+      setBaseMeshes(NO_RESULT);
 
       // setToothLabels(NO_LABELS);
 
@@ -1365,6 +1461,9 @@ export default function App() {
       // show the whole cleaned scan (unsegmented), not the separated gum and teeth
       setSegParts({ upper: null, lower: null });
       setSegVisible(ALL_VISIBLE);
+      markDone("cleanModel");
+      setView("cleanModel");
+      setSegmenterReady(true);
 
       setTimeout(() => setProgress(null), 2000);
     } catch (err) {
@@ -1385,6 +1484,17 @@ export default function App() {
 
   // Generate Trimline / Trim Model / Add Base: runs the new exe on the backend
   const runNewExeCommand = async (commandKey) => {
+    // if (alreadyDone(COMMAND_TO_STEP[commandKey])) return;
+    if (showIfDone(COMMAND_TO_STEP[commandKey])) return;
+    if (!segmenterReady) {
+   alert(NEED_SEGMENTER_MESSAGE);
+   return;
+   }
+   const required = REQUIRED_BEFORE[COMMAND_TO_STEP[commandKey]];
+   if (required && !doneSteps[required.step]) {
+  alert(required.message);
+  return;
+  }
     if (!upper.geo || !lower.geo) {
       setProgress(null);
       setMessage("Please upload both Upper and Lower scan models first");
@@ -1428,20 +1538,43 @@ export default function App() {
         //   setTrimlines((prev) => ({ ...prev, [jaw]: points }));
         // } else {
 
-             if (commandKey === "GenerateTrimline") {
-          const points = await loadPointsFile(url);
-          // 32 editable points; "rel" is the place of Trimline.csv, needed for saving
-          setTrimlines((prev) => ({ ...prev, [jaw]: makeTrimlineData(points, rel) }));
-          setResultMeshes((prev) => ({ ...prev, [jaw]: null })); // a new trimline replaces an old Trim Model / Add Base result
-        } else {
-          const geo = await loadStlFile(url);
-          const kind = commandKey === "TrimModel" ? "trimModel" : "base";
-          setResultMeshes((prev) => ({ ...prev, [jaw]: { kind, geo } }));
-        }
+        //   if (commandKey === "GenerateTrimline") {
+        //   const points = await loadPointsFile(url);
+        //   // 32 editable points; "rel" is the place of Trimline.csv, needed for saving
+        //   setTrimlines((prev) => ({ ...prev, [jaw]: makeTrimlineData(points, rel) }));
+        //   setResultMeshes((prev) => ({ ...prev, [jaw]: null })); // a new trimline replaces an old Trim Model / Add Base result
+        // } else {
+        //   const geo = await loadStlFile(url);
+        //   const kind = commandKey === "TrimModel" ? "trimModel" : "base";
+        //   setResultMeshes((prev) => ({ ...prev, [jaw]: { kind, geo } }));
+        // }
+
+
+          if (commandKey === "GenerateTrimline") {
+     const points = await loadPointsFile(url);
+     setTrimlines((prev) => ({ ...prev, [jaw]: makeTrimlineData(points, rel) }));
+    } else {
+    const geo = await loadStlFile(url);
+    if (commandKey === "TrimModel") {
+    setTrimModelMeshes((prev) => ({ ...prev, [jaw]: { kind: "trimModel", geo } }));
+   } else {
+    setBaseMeshes((prev) => ({ ...prev, [jaw]: { kind: "base", geo } }));
+  }
+}
+
+
       }
+
+      // if (missing.length > 0) {
+      //   setMessage(`Result file not found for: ${missing.join(", ")}`);
+      // }
+
       if (missing.length > 0) {
-        setMessage(`Result file not found for: ${missing.join(", ")}`);
-      }
+    setMessage(`Result file not found for: ${missing.join(", ")}`);
+   } else {
+     markDone(COMMAND_TO_STEP[commandKey]); // only when both jaws gave a result
+     setView(COMMAND_TO_STEP[commandKey]);
+   }
 
 
       setTimeout(() => setProgress(null), 2000);
@@ -1597,6 +1730,14 @@ export default function App() {
     setLatCurves(latCurvesRef.current);
   };
 
+  // only the result of the selected step is shown, everything else is hidden
+const viewCurves = view === "identifyLat" ? latCurves : NO_CURVES;
+const viewParts = view === "segment" ? segParts : NO_PARTS;
+const viewLabels = view === "segment" ? toothLabels : NO_LABELS;
+const viewTrimlines = view === "generateTrimline" ? trimlines : NO_RESULT;
+const viewResults =
+  view === "trimModel" ? trimModelMeshes : view === "addBase" ? baseMeshes : NO_RESULT;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <TopBar
@@ -1617,17 +1758,23 @@ export default function App() {
         <Viewer
           upperGeo={upper.geo}
           lowerGeo={lower.geo}
-          upperParts={segParts.upper}
-          lowerParts={segParts.lower}
+          // upperParts={segParts.upper}
+          upperParts={viewParts.upper}
+          // lowerParts={segParts.lower}
+          lowerParts={viewParts.lower}
           showUpper={showUpper}
           showLower={showLower}
           segVisible={segVisible}
 
-          trimlines={trimlines}
-          resultMeshes={resultMeshes}
-          toothLabels={toothLabels}
+          // trimlines={trimlines}
+          trimlines={viewTrimlines}
+          // resultMeshes={resultMeshes}
+          resultMeshes={viewResults}
+          // toothLabels={toothLabels}
+          toothLabels={viewLabels}
 
-          latCurves={showSplines ? latCurves : NO_CURVES}
+          // latCurves={showSplines ? latCurves : NO_CURVES}
+          latCurves={viewCurves}
           dragging={dragging}
           onStartDrag={startDrag}
           onStartTrimDrag={startTrimDrag}
@@ -1643,11 +1790,14 @@ export default function App() {
           hasLower={!!lower.geo}
           onToggleUpper={() => setShowUpper((v) => !v)}
           onToggleLower={() => setShowLower((v) => !v)}
-          segmentedUpper={!!segParts.upper}
-          segmentedLower={!!segParts.lower}
+          // segmentedUpper={!!segParts.upper}
+          // segmentedLower={!!segParts.lower}
+          segmentedUpper={!!viewParts.upper}
+          segmentedLower={!!viewParts.lower}
           segVisible={segVisible}
           onToggleSeg={toggleSeg}
-          hasNumbers={toothLabels.upper.length + toothLabels.lower.length > 0}
+          // hasNumbers={toothLabels.upper.length + toothLabels.lower.length > 0}
+          hasNumbers={viewLabels.upper.length + viewLabels.lower.length > 0}
            showNumbers={showNumbers}
             onToggleNumbers={() => setShowNumbers((v) => !v)}
         />

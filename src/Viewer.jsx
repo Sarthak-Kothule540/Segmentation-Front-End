@@ -821,7 +821,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useThree} from "@react-three/fiber";
+import { Canvas, useThree, useFrame} from "@react-three/fiber";
 // import { TrackballControls } from "@react-three/drei";
 import { TrackballControls, Line, Html } from "@react-three/drei";
 
@@ -830,10 +830,10 @@ import { TrackballControls, Line, Html } from "@react-three/drei";
 const JAW_COLOR = "#F7E0C5"; //  raw scan
 const GUM_COLOR = "#D47575"; // gum after Segment
 const TEETH_COLOR = "#EEDBD8"; // teeth after Segment
-const LINE_COLOR = "rgb(0, 229, 255)"; // LAT spline
+const LINE_COLOR = "green"; // LAT spline
 const HANDLE_COLOR = "#4a5cff"; // editable points
 
-const TRIMLINE_COLOR = "#00ff44"; // trimline (Generate Trimline)
+const TRIMLINE_COLOR = "green"; // trimline (Generate Trimline)
 const TRIMLINE_RADIUS = 0.15; // thickness of the trimline (mm)
 
 const TRIMLINE_HANDLE_COLOR = "#ff7a00"; // orange: the editable points of the trimline
@@ -954,7 +954,9 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
               visible={visible}
               onPointerMove={visible ? moveHandler : undefined}
             >
-              <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} />
+              {/* <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} /> */}
+
+              <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} side={THREE.DoubleSide} />
             </mesh>
           );
         })}
@@ -974,6 +976,7 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
     >
       <meshStandardMaterial
         color={JAW_COLOR}
+        side={THREE.DoubleSide}
         polygonOffset
         polygonOffsetFactor={1}
         polygonOffsetUnits={1}
@@ -1119,13 +1122,22 @@ function ResultMesh({ result }) {
 
   return (
     <mesh geometry={result.geo}>
-      <meshStandardMaterial
+      {/* <meshStandardMaterial
         color={color}
         // pulled a little towards the camera, so it wins over the surface below it
         polygonOffset
         polygonOffsetFactor={-2}
         polygonOffsetUnits={-2}
-      />
+      /> */}
+
+      <meshStandardMaterial
+    color={color}
+    side={THREE.DoubleSide}
+  // pulled a little towards the camera, so it wins over the surface below it
+   polygonOffset
+   polygonOffsetFactor={-2}
+   polygonOffsetUnits={-2}
+/>
     </mesh>
   );
 }
@@ -1239,6 +1251,34 @@ function FrontView({ targetRef, fitKey }) {
 }
 
 
+// A light that always shines from the camera towards the model
+
+function Headlight() {
+  const { camera, controls } = useThree();
+  const light = useRef();
+
+  useFrame(() => {
+    if (!light.current) return;
+
+    // slightly above and to the left of the camera
+    const up = camera.up.clone().normalize();
+    const right = new THREE.Vector3().crossVectors(camera.getWorldDirection(new THREE.Vector3()), up).normalize();
+    const dist = controls ? camera.position.distanceTo(controls.target) : 100;
+
+    light.current.position
+      .copy(camera.position)
+      .addScaledVector(up, dist * 0.5)
+      .addScaledVector(right, -dist * 0.3);
+
+    if (controls) light.current.target.position.copy(controls.target);
+    light.current.target.updateMatrixWorld();
+  });
+
+  return <directionalLight ref={light} intensity={1.3} />;
+}
+
+
+
 export default function Viewer({
   upperGeo,
   lowerGeo,
@@ -1265,15 +1305,20 @@ export default function Viewer({
   return (
     <Canvas camera={{ position: [0, -150, 0], up: CAMERA_UP, fov: 45, near: 0.1, far: 5000 }}>
        
-      <ambientLight intensity={0.6} />
+      {/* <ambientLight intensity={0.6} />
       <directionalLight position={[50, 50, 50]} intensity={1} />
       <directionalLight position={[-50, -50, -50]} intensity={0.5} /> 
-           
+            */}
+
+      <ambientLight intensity={0.5} />
+      <Headlight />
+      <hemisphereLight args={["#ffeedd", "#888888", 0.2]} />
 
       {/* the scans (the camera fits to this group) */}
       <group ref={modelRef}>
         <group visible={showUpper}>
-           <group visible={resultMeshes.upper?.kind !== "base"}>
+           <group visible={!resultMeshes.upper}> 
+          
           <Jaw
             geo={upperGeo}
             colored={toothLabels.upper.length > 0}
@@ -1300,7 +1345,8 @@ export default function Viewer({
 
         </group>
         <group visible={showLower}>
-        <group visible={resultMeshes.lower?.kind !== "base"}>
+         <group visible={!resultMeshes.lower}> 
+       
           <Jaw
             geo={lowerGeo}
             colored={toothLabels.lower.length > 0}
@@ -1327,7 +1373,7 @@ export default function Viewer({
       </group>
 
       {/* the LAT splines, hidden together with their jaw */}
-      <group visible={showUpper}>
+      <group visible={showUpper }>
         <LatCurves jaw="upper" curves={latCurves.upper} dragging={dragging} onStartDrag={onStartDrag} />
       </group>
       <group visible={showLower}>
