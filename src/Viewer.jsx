@@ -839,8 +839,8 @@ const TRIMLINE_RADIUS = 0.15; // thickness of the trimline (mm)
 const TRIMLINE_HANDLE_COLOR = "#ff7a00"; // orange: the editable points of the trimline
 const TRIMLINE_HANDLE_RADIUS = 0.35; // size of those points (mm)
 
-const TRIM_MODEL_COLOR = "rgb(255, 255, 255)"; // Trim Model result
-const BASE_MODEL_COLOR = "rgb(255, 255, 255)"; // Add Base result
+const TRIM_MODEL_COLOR = "#F7E0C5"; // Trim Model result
+const BASE_MODEL_COLOR = "#F7E0C5"; // Add Base result
 
 
 const LABEL_COLOR = "#705bd1"; // line and bubble of the tooth numbers
@@ -870,6 +870,7 @@ const SPLINE_SAMPLES = 200; // smoothness of the spline
 const FRONT_DIRECTION = -1; // -1 = camera on the -Y side, 1 = camera on the +Y side
 const CAMERA_UP = [0, 0, 1]; // Z is up in your scans
 const FIT_MARGIN = 1.1; // smaller = closer
+const LINES_ALWAYS_VISIBLE = false; // true = lines and points are drawn even where they are inside the surface
 
 const noRaycast = () => null; // makes an object "invisible" for mouse picking
 const meshRaycast = THREE.Mesh.prototype.raycast; // normal picking
@@ -956,7 +957,15 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
             >
               {/* <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} /> */}
 
-              <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} side={THREE.DoubleSide} />
+              {/* <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} side={THREE.DoubleSide} /> */}
+              <meshStandardMaterial
+             color={gum ? GUM_COLOR : TEETH_COLOR}
+             side={THREE.DoubleSide}
+             polygonOffset
+             polygonOffsetFactor={8}
+             polygonOffsetUnits={8}
+           />
+
             </mesh>
           );
         })}
@@ -978,8 +987,8 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
         color={JAW_COLOR}
         side={THREE.DoubleSide}
         polygonOffset
-        polygonOffsetFactor={1}
-        polygonOffsetUnits={1}
+        polygonOffsetFactor={25}
+        polygonOffsetUnits={25}
       />
     </mesh>
   );
@@ -1000,7 +1009,11 @@ function LatSpline({ jaw, curve, dragging, onStartDrag }) {
     <>
       {tubeGeometry && (
         <mesh geometry={tubeGeometry} renderOrder={10} raycast={noRaycast}>
-          <meshBasicMaterial color={LINE_COLOR} />
+          {/* <meshBasicMaterial color={LINE_COLOR} /> */}
+          <meshBasicMaterial
+         color={LINE_COLOR}
+         depthTest={!LINES_ALWAYS_VISIBLE}
+         />
         </mesh>
       )}
 
@@ -1020,7 +1033,11 @@ function LatSpline({ jaw, curve, dragging, onStartDrag }) {
           onPointerOut={() => (document.body.style.cursor = "default")}
         >
           <sphereGeometry args={[HANDLE_RADIUS, 12, 12]} />
-          <meshBasicMaterial color={HANDLE_COLOR} />
+          {/* <meshBasicMaterial color={HANDLE_COLOR} /> */}
+          <meshBasicMaterial
+         color={HANDLE_COLOR}
+        depthTest={!LINES_ALWAYS_VISIBLE}
+        />
         </mesh>
       ))}
     </>
@@ -1087,7 +1104,11 @@ function EditableTrimline({ jaw, trimline, dragging, onStartTrimDrag }) {
   return (
     <>
       <mesh geometry={geometry} renderOrder={12} raycast={noRaycast}>
-        <meshBasicMaterial color={TRIMLINE_COLOR} />
+        {/* <meshBasicMaterial color={TRIMLINE_COLOR} /> */}
+        <meshBasicMaterial
+      color={TRIMLINE_COLOR}
+     depthTest={!LINES_ALWAYS_VISIBLE}
+      />
       </mesh>
 
       {trimline.points.map((p, i) => (
@@ -1106,7 +1127,11 @@ function EditableTrimline({ jaw, trimline, dragging, onStartTrimDrag }) {
           onPointerOut={() => (document.body.style.cursor = "default")}
         >
           <sphereGeometry args={[TRIMLINE_HANDLE_RADIUS, 12, 12]} />
-          <meshBasicMaterial color={TRIMLINE_HANDLE_COLOR} />
+          {/* <meshBasicMaterial color={TRIMLINE_HANDLE_COLOR} /> */}
+          <meshBasicMaterial
+         color={TRIMLINE_HANDLE_COLOR}
+         depthTest={!LINES_ALWAYS_VISIBLE}
+         />
         </mesh>
       ))}
     </>

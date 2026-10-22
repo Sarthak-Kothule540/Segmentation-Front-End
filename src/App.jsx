@@ -1106,6 +1106,15 @@ const NO_LABELS = { upper: [], lower: [] };
 const NO_PARTS = { upper: null, lower: null };
 
 const STEP_ORDER = ["cleanModel", "generateTrimline", "trimModel", "addBase", "identifyLat", "segment"];
+// when a step runs, only these steps become "not done" again
+const RESETS = {
+  cleanModel: ["generateTrimline", "trimModel", "addBase", "identifyLat", "segment"],
+  generateTrimline: ["trimModel", "addBase"],
+  trimModel: ["addBase"],
+  addBase: [],
+  identifyLat: ["segment"],
+  segment: [],
+};
 
 const NOT_DONE = {
   cleanModel: false,
@@ -1158,12 +1167,22 @@ const [doneSteps, setDoneSteps] = useState(NOT_DONE);
 const [segmenterReady, setSegmenterReady] = useState(false);
 
 // marks a step as done and resets the steps after it
+// const markDone = (step) =>
+//   setDoneSteps((prev) => {
+//     const next = { ...prev };
+//     STEP_ORDER.forEach((s, i) => {
+//       if (i > STEP_ORDER.indexOf(step)) next[s] = false;
+//     });
+//     next[step] = true;
+//     return next;
+//   });
+
+
+
 const markDone = (step) =>
   setDoneSteps((prev) => {
     const next = { ...prev };
-    STEP_ORDER.forEach((s, i) => {
-      if (i > STEP_ORDER.indexOf(step)) next[s] = false;
-    });
+    RESETS[step].forEach((s) => (next[s] = false));
     next[step] = true;
     return next;
   });
