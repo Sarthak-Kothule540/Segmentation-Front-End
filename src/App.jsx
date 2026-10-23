@@ -1103,6 +1103,9 @@ const ALL_VISIBLE = { upperTeeth: true, upperGum: true, lowerTeeth: true, lowerG
 const NO_RESULT = { upper: null, lower: null };
 
 const NO_LABELS = { upper: [], lower: [] };
+// TESTING ONLY: true = Generate Trimline / Trim Model / Add Base work after a new upload
+// without running Clean Model or Identify LAT again (the old Output folder is kept)
+const KEEP_OUTPUT_ON_UPLOAD = true;
 const NO_PARTS = { upper: null, lower: null };
 
 const STEP_ORDER = ["cleanModel", "generateTrimline", "trimModel", "addBase", "identifyLat", "segment"];
@@ -1164,7 +1167,9 @@ export default function App() {
 const [doneSteps, setDoneSteps] = useState(NOT_DONE);
 
 // true after Clean Model or Identify LAT finished (the segmenter result exists)
-const [segmenterReady, setSegmenterReady] = useState(false);
+// const [segmenterReady, setSegmenterReady] = useState(false);
+
+const [segmenterReady, setSegmenterReady] = useState(KEEP_OUTPUT_ON_UPLOAD);
 
 // marks a step as done and resets the steps after it
 // const markDone = (step) =>
@@ -1505,10 +1510,28 @@ const [view, setView] = useState("scan");
   const runNewExeCommand = async (commandKey) => {
     // if (alreadyDone(COMMAND_TO_STEP[commandKey])) return;
     if (showIfDone(COMMAND_TO_STEP[commandKey])) return;
-    if (!segmenterReady) {
-   alert(NEED_SEGMENTER_MESSAGE);
-   return;
-   }
+  //   if (!segmenterReady) {
+  //  alert(NEED_SEGMENTER_MESSAGE);
+  //  return;
+  //  }
+
+  if (!segmenterReady) {
+  // the flag is false (for example after a refresh), so ask the backend about the real files
+  let ready = false;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/output-ready`);
+    ready = (await res.json()).ready;
+  } catch (err) {
+    ready = false;
+  }
+  if (!ready) {
+    alert(NEED_SEGMENTER_MESSAGE);
+    return;
+  }
+}
+
+
+
    const required = REQUIRED_BEFORE[COMMAND_TO_STEP[commandKey]];
    if (required && !doneSteps[required.step]) {
   alert(required.message);
