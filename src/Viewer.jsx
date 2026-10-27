@@ -836,7 +836,7 @@ const HANDLE_COLOR = "#4a5cff"; // editable points
 const TRIMLINE_COLOR = "green"; // trimline (Generate Trimline)
 const TRIMLINE_RADIUS = 0.15; // thickness of the trimline (mm)
 
-const TRIMLINE_HANDLE_COLOR = "#ff7a00"; // orange: the editable points of the trimline
+const TRIMLINE_HANDLE_COLOR = "#800080"; 
 const TRIMLINE_HANDLE_RADIUS = 0.35; // size of those points (mm)
 
 const TRIM_MODEL_COLOR = "#F7E0C5"; // Trim Model result
