@@ -790,6 +790,7 @@ export default function TopBar({
   onLowerSelected,
   onIdentifyLat,
    onSegment,
+  onAutomaticSetup,
   onToolClick,
   busy,
   progress,
@@ -895,6 +896,13 @@ export default function TopBar({
           onClick={onSegment}>
           Segment
          </button>
+         <button
+        style={{ ...styles.toolButton, opacity: busy ? 0.5 : 1 }}
+        disabled={busy}
+       onClick={onAutomaticSetup}>
+       Automatic Setup
+       </button>
+
           </div>
         )}
 

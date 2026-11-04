@@ -1111,12 +1111,13 @@ const NO_PARTS = { upper: null, lower: null };
 const STEP_ORDER = ["cleanModel", "generateTrimline", "trimModel", "addBase", "identifyLat", "segment"];
 // when a step runs, only these steps become "not done" again
 const RESETS = {
-  cleanModel: ["generateTrimline", "trimModel", "addBase", "identifyLat", "segment"],
+  cleanModel: ["generateTrimline", "trimModel", "addBase", "identifyLat", "segment","automaticSetup"],
   generateTrimline: ["trimModel", "addBase"],
   trimModel: ["addBase"],
   addBase: [],
-  identifyLat: ["segment"],
-  segment: [],
+  identifyLat: ["segment","automaticSetup"],
+  segment: ["automaticSetup"],
+    automaticSetup: [],
 };
 
 const NOT_DONE = {
@@ -1126,6 +1127,7 @@ const NOT_DONE = {
   generateTrimline: false,
   trimModel: false,
   addBase: false,
+  automaticSetup: false,
 };
 
 
@@ -1628,6 +1630,45 @@ const [view, setView] = useState("scan");
     }
   };
 
+// ---------------- Automatic Setup button ----------------
+const handleAutomaticSetup = async () => {
+  if (busy) return;
+
+  if (doneSteps.automaticSetup) {
+    setMessage("Automatic Setup is already completed. The output is in D:\\Temp\\uploads\\AutomaticSetupOutput");
+    return;
+  }
+  if (!doneSteps.segment) {
+    alert("Please do Segment first.");
+    return;
+  }
+
+  setBusy(true);
+  setMessage("");
+  setProgress({ percent: 0, label: "Starting..." });
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/automatic-setup`, { method: "POST" });
+    const started = await res.json();
+    if (!res.ok) throw new Error(started.message);
+
+    const job = await waitForJob(`${BACKEND_URL}/api/automatic-setup/status`);
+
+    // the files made by the exe (also printed in the backend terminal)
+    console.log("Automatic Setup output files:", job.files);
+
+    markDone("automaticSetup");
+    setMessage(`Automatic Setup completed. Output: ${job.outputDir}`);
+    setTimeout(() => setProgress(null), 2000);
+  } catch (err) {
+    setProgress(null);
+    setMessage(err.message);
+  } finally {
+    setBusy(false);
+  }
+};
+  
+
   // the buttons in the Clean Model tab (Clean Model, Generate Trimline, Trim Model, Add Base)
   const handleToolClick = (tool) => {
     if (busy) return;
@@ -1793,6 +1834,7 @@ const viewResults =
         busy={busy}
         progress={progress}
         message={message}
+        onAutomaticSetup={handleAutomaticSetup}
       />
 
       {/* position: relative lets the buttons float over the top-right of the 3D area */}
