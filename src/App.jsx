@@ -1731,6 +1731,22 @@ const handleAutomaticSetup = async () => {
     setBusy(false);
   }
 };
+
+
+
+// Initial Position: the Segment result (no exe is called)
+const handleInitialPosition = () => {
+  if (busy) return;
+  setView("segment");
+  setMessage("");
+};
+
+// Final Position: the Automatic Setup result (no exe is called)
+const handleFinalPosition = () => {
+  if (busy) return;
+  setView("automaticSetup");
+  setMessage("");
+};
   
 
   // the buttons in the Clean Model tab (Clean Model, Generate Trimline, Trim Model, Add Base)
@@ -1918,6 +1934,10 @@ const viewResults =
         progress={progress}
         message={message}
         onAutomaticSetup={handleAutomaticSetup}
+        onInitialPosition={handleInitialPosition}
+        onFinalPosition={handleFinalPosition}
+        setupReady={doneSteps.automaticSetup}
+        view={view}
       />
 
       {/* position: relative lets the buttons float over the top-right of the 3D area */}

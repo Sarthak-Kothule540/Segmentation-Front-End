@@ -780,7 +780,7 @@
 import { useRef, useState } from "react";
 import ProgressBar from "./ProgressBar.jsx";
 
-const TABS = ["File", "Clean Model", "Segment"];
+const TABS = ["File", "Clean Model", "Segment", "Automatic Setup"];
 const CLEAN_MODEL_TOOLS = ["Clean Model", "Generate Trimline", "Trim Model", "Add Base"];
 
 export default function TopBar({
@@ -791,6 +791,10 @@ export default function TopBar({
   onIdentifyLat,
    onSegment,
   onAutomaticSetup,
+  onInitialPosition,
+  onFinalPosition,
+  setupReady,
+  view,
   onToolClick,
   busy,
   progress,
@@ -813,7 +817,13 @@ export default function TopBar({
         {TABS.map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            // onClick={() => setActiveTab(tab)}
+
+          onClick={() => {
+         setActiveTab(tab);
+         if (tab === "Automatic Setup" && onAutomaticSetup) onAutomaticSetup();
+          }}
+
             style={{
               ...styles.tabButton,
               background: activeTab === tab ? "#4f8cff" : "#3a3a3a",
@@ -896,15 +906,38 @@ export default function TopBar({
           onClick={onSegment}>
           Segment
          </button>
-         <button
-        style={{ ...styles.toolButton, opacity: busy ? 0.5 : 1 }}
-        disabled={busy}
-       onClick={onAutomaticSetup}>
-       Automatic Setup
-       </button>
+        
 
           </div>
         )}
+
+     {activeTab === "Automatic Setup" && setupReady && (
+  <div style={styles.toolRow}>
+    <button
+      style={{
+        ...styles.toolButton,
+        background: view === "segment" ? "#4f8cff" : "#5a5a5a",
+        opacity: busy ? 0.5 : 1,
+      }}
+      disabled={busy}
+      onClick={onInitialPosition}
+    >
+      Initial Position
+    </button>
+    <button
+      style={{
+        ...styles.toolButton,
+        background: view === "automaticSetup" ? "#4f8cff" : "#5a5a5a",
+        opacity: busy ? 0.5 : 1,
+      }}
+      disabled={busy}
+      onClick={onFinalPosition}
+    >
+      Final Position
+    </button>
+  </div>
+)}
+
 
         {/* progress bar: centered inside the second bar */}
         {progress && (
