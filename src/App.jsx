@@ -1224,6 +1224,9 @@ const showIfDone = (step) => {
   // separated gum and teeth after Segment: [{ name, geo }, ...] for each jaw
   const [segParts, setSegParts] = useState({ upper: null, lower: null });
 
+  // result of Automatic Setup: [{ name, geo }, ...] for each jaw
+const [setupParts, setSetupParts] = useState({ upper: null, lower: null });
+
   // visibility of the upper/lower teeth and gum (the four buttons after Segment)
   const [segVisible, setSegVisible] = useState(ALL_VISIBLE);
   const toggleSeg = (key) => setSegVisible((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -1265,6 +1268,7 @@ const [view, setView] = useState("scan");
     // a new scan: remove the old LAT and the old separated parts of that jaw
     setLatCurves((prev) => ({ ...prev, [type]: [] }));
     setSegParts((prev) => ({ ...prev, [type]: null }));
+    setSetupParts((prev) => ({ ...prev, [type]: null }));
 
     setToothLabels((prev) => ({ ...prev, [type]: [] }));
     setSegVisible(ALL_VISIBLE);
@@ -1631,11 +1635,53 @@ const [view, setView] = useState("scan");
   };
 
 // ---------------- Automatic Setup button ----------------
+// const handleAutomaticSetup = async () => {
+//   if (busy) return;
+
+//   if (doneSteps.automaticSetup) {
+//     setMessage("Automatic Setup is already completed. The output is in D:\\Temp\\uploads\\AutomaticSetupOutput");
+//     return;
+//   }
+//   if (!doneSteps.segment) {
+//     alert("Please do Segment first.");
+//     return;
+//   }
+
+//   setBusy(true);
+//   setMessage("");
+//   setProgress({ percent: 0, label: "Starting..." });
+
+//   try {
+//     const res = await fetch(`${BACKEND_URL}/api/automatic-setup`, { method: "POST" });
+//     const started = await res.json();
+//     if (!res.ok) throw new Error(started.message);
+
+//     const job = await waitForJob(`${BACKEND_URL}/api/automatic-setup/status`);
+
+//     // the files made by the exe (also printed in the backend terminal)
+//     console.log("Automatic Setup output files:", job.files);
+
+//     markDone("automaticSetup");
+//     setMessage(`Automatic Setup completed. Output: ${job.outputDir}`);
+//     setTimeout(() => setProgress(null), 2000);
+//   } catch (err) {
+//     setProgress(null);
+//     setMessage(err.message);
+//   } finally {
+//     setBusy(false);
+//   }
+// };
+
+
+
+
 const handleAutomaticSetup = async () => {
   if (busy) return;
 
+  // already done: only show the stored result, the exe is not called again
   if (doneSteps.automaticSetup) {
-    setMessage("Automatic Setup is already completed. The output is in D:\\Temp\\uploads\\AutomaticSetupOutput");
+    setView("automaticSetup");
+    setMessage("");
     return;
   }
   if (!doneSteps.segment) {
@@ -1653,12 +1699,30 @@ const handleAutomaticSetup = async () => {
     if (!res.ok) throw new Error(started.message);
 
     const job = await waitForJob(`${BACKEND_URL}/api/automatic-setup/status`);
-
-    // the files made by the exe (also printed in the backend terminal)
     console.log("Automatic Setup output files:", job.files);
 
+    // download the STL files that the exe made, for each jaw
+    const stamp = Date.now();
+    const parts = { upper: [], lower: [] };
+    for (const rel of (job.files || []).filter((f) => f.toLowerCase().endsWith(".stl"))) {
+      const jaw = rel.split("/")[0]; // "upper" or "lower"
+      if (jaw !== "upper" && jaw !== "lower") continue;
+      const geo = await loadStlFile(`${BACKEND_URL}/files/AutomaticSetupOutput/${rel}?t=${stamp}`);
+      parts[jaw].push({ name: rel.split("/").pop(), geo });
+    }
+
     markDone("automaticSetup");
-    setMessage(`Automatic Setup completed. Output: ${job.outputDir}`);
+
+    if (parts.upper.length + parts.lower.length === 0) {
+      setMessage(`Automatic Setup completed, but it made no STL files to show. Output: ${job.outputDir}`);
+    } else {
+      setSetupParts({
+        upper: parts.upper.length ? parts.upper : null,
+        lower: parts.lower.length ? parts.lower : null,
+      });
+      setView("automaticSetup");
+    }
+
     setTimeout(() => setProgress(null), 2000);
   } catch (err) {
     setProgress(null);
@@ -1815,7 +1879,26 @@ const handleAutomaticSetup = async () => {
 
   // only the result of the selected step is shown, everything else is hidden
 const viewCurves = view === "identifyLat" ? latCurves : NO_CURVES;
-const viewParts = view === "segment" ? segParts : NO_PARTS;
+// const viewParts = view === "segment" ? segParts : NO_PARTS;
+// const viewParts =
+//   view === "segment" ? segParts : view === "automaticSetup" ? setupParts : NO_PARTS;
+
+// Automatic Setup view: the moved teeth from the exe + the gum from the Segment step
+const isGumPart = (p) => p.name.toLowerCase().includes("gum");
+const setupWithGum = (jaw) => {
+  const teeth = setupParts[jaw];
+  if (!teeth) return null;
+  if (teeth.some(isGumPart)) return teeth; // the exe already made a gum, so use it
+  const gum = (segParts[jaw] || []).filter(isGumPart);
+  return [...gum, ...teeth];
+};
+const setupView = { upper: setupWithGum("upper"), lower: setupWithGum("lower") };
+
+const viewParts =
+  view === "segment" ? segParts : view === "automaticSetup" ? setupView : NO_PARTS;
+
+
+
 const viewLabels = view === "segment" ? toothLabels : NO_LABELS;
 const viewTrimlines = view === "generateTrimline" ? trimlines : NO_RESULT;
 const viewResults =
