@@ -1109,6 +1109,8 @@ const NO_LABELS = { upper: [], lower: [] };
 const KEEP_OUTPUT_ON_UPLOAD = false;
 const NO_PARTS = { upper: null, lower: null };
 
+  
+
 const STEP_ORDER = ["cleanModel", "generateTrimline", "trimModel", "addBase", "identifyLat", "segment"];
 // when a step runs, only these steps become "not done" again
 const RESETS = {
@@ -1250,6 +1252,9 @@ const [view, setView] = useState("scan");
     // tooth number labels after Segment: [{ id: "11", a: Vector3, b: Vector3 }, ...] for each jaw
   const [toothLabels, setToothLabels] = useState(NO_LABELS);
        const [showNumbers, setShowNumbers] = useState(true);
+
+       const [viewRequest, setViewRequest] = useState(null);
+
 
 
   // dragging of one editable point
@@ -1748,6 +1753,8 @@ const handleFinalPosition = () => {
   setView("automaticSetup");
   setMessage("");
 };
+
+  const handleViewChange = (name) => setViewRequest({ name, id: Date.now() });
   
 
   // the buttons in the Clean Model tab (Clean Model, Generate Trimline, Trim Model, Add Base)
@@ -1971,6 +1978,8 @@ const viewResults =
         onFinalPosition={handleFinalPosition}
         setupReady={doneSteps.automaticSetup}
         view={view}
+        onViewChange={handleViewChange}
+
       />
 
       {/* position: relative lets the buttons float over the top-right of the 3D area */}
@@ -2001,6 +2010,7 @@ const viewResults =
           onMoveDrag={moveDrag}
           onEndDrag={endDrag}
           showNumbers={showNumbers}
+          viewRequest={viewRequest}
         />
 
         <VisibilityButtons

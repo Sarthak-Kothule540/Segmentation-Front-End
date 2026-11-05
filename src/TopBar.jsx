@@ -782,6 +782,9 @@ import ProgressBar from "./ProgressBar.jsx";
 
 const TABS = ["File", "Clean Model", "Segment", "Automatic Setup"];
 const CLEAN_MODEL_TOOLS = ["Clean Model", "Generate Trimline", "Trim Model", "Add Base"];
+const VIEWS = ["Front View", "Back View", "Top View", "Bottom View", "Left View", "Right View"];
+
+  
 
 export default function TopBar({
   upperName,
@@ -796,11 +799,13 @@ export default function TopBar({
   setupReady,
   view,
   onToolClick,
+  onViewChange,
   busy,
   progress,
   message,
 }) {
   const [activeTab, setActiveTab] = useState("File");
+   const [activeView, setActiveView] = useState("Front View"); // the view button shown in blue
   const upperInputRef = useRef(null);
   const lowerInputRef = useRef(null);
 
@@ -877,6 +882,11 @@ export default function TopBar({
           </>
         )}
 
+
+
+
+
+
         {activeTab === "Clean Model" && (
           <div style={styles.toolRow}>
             {CLEAN_MODEL_TOOLS.map((tool) => (
@@ -946,6 +956,28 @@ export default function TopBar({
           </div>
         )}
       </div>
+
+            <div style={styles.thirdBar}>
+        {VIEWS.map((v) => (
+          <button
+            key={v}
+            style={{
+              ...styles.viewButton,
+              background: activeView === v ? "#4f8cff" : "#8a8a8a",
+              border: activeView === v ? "1px solid #4f8cff" : "1px solid #a0a0a0",
+            }}
+            onClick={() => {
+              setActiveView(v);
+              onViewChange && onViewChange(v);
+            }}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+
+
+                   
     </div>
   );
 }
@@ -1036,4 +1068,24 @@ const styles = {
     cursor: "pointer",
     fontSize: 14,
   },
+    thirdBar: {
+    height: 44,
+    background: "#6b6b6b", // grey
+    display: "flex",
+    alignItems: "center",
+    padding: "0 16px",
+    gap: 12,
+    boxSizing: "border-box",
+  },
+  viewButton: {
+    padding: "6px 16px",
+    background: "#8a8a8a",
+    color: "white",
+    border: "1px solid #a0a0a0",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: 14,
+  },
+
+
 };
