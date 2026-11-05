@@ -1085,11 +1085,12 @@
 
 
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback,useMemo, useRef, useState } from "react";
 import TopBar from "./TopBar.jsx";
 import Viewer from "./Viewer.jsx";
 import VisibilityButtons from "./VisibilityButtons.jsx";
 import { parseStl } from "./stlUtils.js";
+import { removeTeeth } from "./gumUtils.js";
 // import { loadLatCurves, loadStlParts, saveLatCurve } from "./latUtils.js";
 
 // import { loadLatCurves, loadStlParts, saveLatCurve, loadPointsFile, loadStlFile } from "./latUtils.js";
@@ -1903,12 +1904,41 @@ const viewCurves = view === "identifyLat" ? latCurves : NO_CURVES;
 // const isGumPart = (p) => p.name.toLowerCase().includes("gum");
 // const isGumPart = (p) => /gum|modelwithbase/i.test(p.name);
 
+// const isGumPart = (p) => p.name.toLowerCase().includes("gum");
+// const setupWithGum = (jaw) => {
+//   const teeth = setupParts[jaw];
+//   if (!teeth) return null;
+//   if (teeth.some(isGumPart)) return teeth; // the exe already made a gum, so use it
+//   const gum = (segParts[jaw] || []).filter(isGumPart);
+//   return [...gum, ...teeth];
+// };
+// const setupView = { upper: setupWithGum("upper"), lower: setupWithGum("lower") };
+
+
+
 const isGumPart = (p) => p.name.toLowerCase().includes("gum");
+const isWholePart = (p) => /modelwithbase/i.test(p.name);
+
+// full gum with base (no teeth), cut out of ModelWithBase.stl; built once per Segment result
+const wholeGum = useMemo(() => {
+  const build = (parts) => {
+    if (!parts) return null;
+    const whole = parts.find(isWholePart);
+    if (!whole) return null;
+    const teeth = parts.filter((p) => !isGumPart(p) && !isWholePart(p)).map((p) => p.geo);
+    const geo = removeTeeth(whole.geo, teeth);
+    return geo ? { name: "GumWithBase.stl", geo } : null;
+  };
+  return { upper: build(segParts.upper), lower: build(segParts.lower) };
+}, [segParts]);
+
 const setupWithGum = (jaw) => {
   const teeth = setupParts[jaw];
   if (!teeth) return null;
   if (teeth.some(isGumPart)) return teeth; // the exe already made a gum, so use it
-  const gum = (segParts[jaw] || []).filter(isGumPart);
+  const gum = wholeGum[jaw]
+    ? [wholeGum[jaw]]
+    : (segParts[jaw] || []).filter((p) => isGumPart(p)); // fallback: plain Gum.stl
   return [...gum, ...teeth];
 };
 const setupView = { upper: setupWithGum("upper"), lower: setupWithGum("lower") };
