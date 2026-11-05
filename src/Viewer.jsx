@@ -842,6 +842,7 @@ const TRIMLINE_HANDLE_RADIUS = 0.35; // size of those points (mm)
 const TRIM_MODEL_COLOR = "#F7E0C5"; // Trim Model result
 const BASE_MODEL_COLOR = "#F7E0C5"; // Add Base result
 
+const MODEL_WITH_BASE_COLOR = GUM_COLOR; // the whole model with base (Segment view)
 
 const LABEL_COLOR = "#705bd1"; // line and bubble of the tooth numbers
 
@@ -876,8 +877,11 @@ const noRaycast = () => null; // makes an object "invisible" for mouse picking
 const meshRaycast = THREE.Mesh.prototype.raycast; // normal picking
 
 // Gum.stl is gum, every other file (11.stl, 12.stl, ...) is a tooth
-const isGum = (fileName) => fileName.toLowerCase().includes("gum");
+// const isGum = (fileName) => fileName.toLowerCase().includes("gum");
+// const isGum = (fileName) => /gum|modelwithbase/i.test(fileName);
 
+const isGum = (fileName) => fileName.toLowerCase().includes("gum");
+const isModelWithBase = (fileName) => /modelwithbase/i.test(fileName);
 // ---------------- One jaw: the raw scan, or the separated gum and teeth ----------------
 // function Jaw({ geo, parts, colored, showTeeth, showGum, active, dragging, onMoveDrag }) {
 //   // after Segment: gum and every tooth with their own color and their own visibility
@@ -931,8 +935,133 @@ const isGum = (fileName) => fileName.toLowerCase().includes("gum");
 
 
 
+// Makes a gum-only copy of the model with base by removing the triangles
+// whose 3 corners are all corners of a tooth mesh.
+function removeTeeth(wholeGeo, toothGeos) {
+  const key = (x, y, z) =>
+    `${Math.round(x * 1000)},${Math.round(y * 1000)},${Math.round(z * 1000)}`;
+
+  const toothKeys = new Set();
+  for (const g of toothGeos) {
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) toothKeys.add(key(p.getX(i), p.getY(i), p.getZ(i)));
+  }
+
+  const pos = wholeGeo.attributes.position;
+  const index = wholeGeo.index;
+  const triCount = index ? index.count / 3 : pos.count / 3;
+  const vert = (t, k) => (index ? index.getX(t * 3 + k) : t * 3 + k);
+
+  const out = [];
+  let removed = 0;
+  for (let t = 0; t < triCount; t++) {
+    const v = [vert(t, 0), vert(t, 1), vert(t, 2)];
+    const isTooth = v.every((i) => toothKeys.has(key(pos.getX(i), pos.getY(i), pos.getZ(i))));
+    if (isTooth) {
+      removed++;
+      continue;
+    }
+    for (const i of v) out.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+  }
+
+  console.log(`removeTeeth: removed ${removed} of ${triCount} triangles`);
+  if (removed === 0) return null; // nothing matched, caller falls back
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(out), 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+
+
+// function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
+//   // while a point is dragged, it follows the surface under the mouse
+//   const moveHandler =
+//     dragging && active
+//       ? (e) => {
+//           e.stopPropagation();
+//           onMoveDrag(e.point);
+//         }
+//       : undefined;
+
+//   // after Segment: gum and every tooth with their own visibility
+//   if (parts && parts.length > 0) {
+//     // true when the model with base is among the parts
+// const hasWhole = parts.some((p) => isModelWithBase(p.name));
+//     return (
+//       <>
+//         {parts.map((p) => {
+//           // const gum = isGum(p.name);
+//           // const visible = gum ? showGum : showTeeth;
+//          const gum = isGum(p.name);
+// const whole = isModelWithBase(p.name);
+// // the whole model has both gum and teeth, so it is hidden only when both buttons are off
+// // const visible = whole ? showGum || showTeeth : gum ? showGum : showTeeth;
+// // const visible = whole ? showGum : gum ? showGum : showTeeth;
+
+// // the model with base shows only while the teeth are on; with the teeth off, the plain gum is shown instead
+// const visible = whole
+//   ? showGum && showTeeth
+//   : gum
+//   ? hasWhole
+//     ? showGum && !showTeeth
+//     : showGum
+//   : showTeeth;
+// const color = whole ? MODEL_WITH_BASE_COLOR : gum ? GUM_COLOR : TEETH_COLOR;
+
+//           return (
+//             <mesh
+//               key={p.name}
+//               geometry={p.geo}
+//               visible={visible}
+//               onPointerMove={visible ? moveHandler : undefined}
+//             >
+//               {/* <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} /> */}
+
+//               {/* <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} side={THREE.DoubleSide} /> */}
+//               <meshStandardMaterial
+//             //  color={gum ? GUM_COLOR : TEETH_COLOR}
+//              color={color}
+//              side={THREE.DoubleSide}
+//              polygonOffset
+//             //  polygonOffsetFactor={8}
+//             //  polygonOffsetUnits={8}
+           
+//           polygonOffsetFactor={whole ? 20 : 8}
+//           polygonOffsetUnits={whole ? 20 : 8}
+//            />
+
+//             </mesh>
+//           );
+//         })}
+//       </>
+//     );
+//   }
+
+//   if (!geo) return null;
+
+//   // before Segment: the raw scan
+//   return (
+//     <mesh
+//       geometry={geo}
+//       // the scan blocks clicks on points that are behind it
+//       onPointerDown={(e) => e.stopPropagation()}
+//       onPointerMove={moveHandler}
+//     >
+//       <meshStandardMaterial
+//         color={JAW_COLOR}
+//         side={THREE.DoubleSide}
+//         polygonOffset
+//         polygonOffsetFactor={25}
+//         polygonOffsetUnits={25}
+//       />
+//     </mesh>
+//   );
+// }
+
+
 function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
-  // while a point is dragged, it follows the surface under the mouse
   const moveHandler =
     dragging && active
       ? (e) => {
@@ -941,13 +1070,57 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
         }
       : undefined;
 
-  // after Segment: gum and every tooth with their own visibility
+  const whole = parts ? parts.find((p) => isModelWithBase(p.name)) : null;
+
+  // gum + base without the teeth (built once per result)
+  const gumOnlyGeo = useMemo(() => {
+    if (!whole || !parts) return null;
+    const teeth = parts.filter((p) => !isGum(p.name) && !isModelWithBase(p.name)).map((p) => p.geo);
+    return removeTeeth(whole.geo, teeth);
+  }, [whole, parts]);
+
   if (parts && parts.length > 0) {
     return (
       <>
+        {/* gum with base, no teeth */}
+        {whole && gumOnlyGeo && (
+          <mesh
+            geometry={gumOnlyGeo}
+            visible={showGum}
+            onPointerMove={showGum ? moveHandler : undefined}
+          >
+            <meshStandardMaterial
+              color={GUM_COLOR}
+              side={THREE.DoubleSide}
+              polygonOffset
+              polygonOffsetFactor={8}
+              polygonOffsetUnits={8}
+            />
+          </mesh>
+        )}
+
         {parts.map((p) => {
+          if (isModelWithBase(p.name)) {
+            // fallback only: if the teeth could not be removed, show the whole model
+            // when both buttons are on (old behaviour)
+            if (gumOnlyGeo) return null;
+            return (
+              <mesh key={p.name} geometry={p.geo} visible={showGum && showTeeth}>
+                <meshStandardMaterial
+                  color={GUM_COLOR}
+                  side={THREE.DoubleSide}
+                  polygonOffset
+                  polygonOffsetFactor={20}
+                  polygonOffsetUnits={20}
+                />
+              </mesh>
+            );
+          }
+
           const gum = isGum(p.name);
-          const visible = gum ? showGum : showTeeth;
+          // the plain Gum.stl is replaced by the gum with base
+          const visible = gum ? showGum && !whole : showTeeth;
+
           return (
             <mesh
               key={p.name}
@@ -955,17 +1128,13 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
               visible={visible}
               onPointerMove={visible ? moveHandler : undefined}
             >
-              {/* <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} /> */}
-
-              {/* <meshStandardMaterial color={gum ? GUM_COLOR : TEETH_COLOR} side={THREE.DoubleSide} /> */}
               <meshStandardMaterial
-             color={gum ? GUM_COLOR : TEETH_COLOR}
-             side={THREE.DoubleSide}
-             polygonOffset
-             polygonOffsetFactor={8}
-             polygonOffsetUnits={8}
-           />
-
+                color={gum ? GUM_COLOR : TEETH_COLOR}
+                side={THREE.DoubleSide}
+                polygonOffset
+                polygonOffsetFactor={8}
+                polygonOffsetUnits={8}
+              />
             </mesh>
           );
         })}
@@ -975,14 +1144,8 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
 
   if (!geo) return null;
 
-  // before Segment: the raw scan
   return (
-    <mesh
-      geometry={geo}
-      // the scan blocks clicks on points that are behind it
-      onPointerDown={(e) => e.stopPropagation()}
-      onPointerMove={moveHandler}
-    >
+    <mesh geometry={geo} onPointerDown={(e) => e.stopPropagation()} onPointerMove={moveHandler}>
       <meshStandardMaterial
         color={JAW_COLOR}
         side={THREE.DoubleSide}
@@ -993,6 +1156,7 @@ function Jaw({ geo, parts, showTeeth, showGum, active, dragging, onMoveDrag }) {
     </mesh>
   );
 }
+
 
 // ---------------- The spline of one tooth ----------------
 function LatSpline({ jaw, curve, dragging, onStartDrag }) {

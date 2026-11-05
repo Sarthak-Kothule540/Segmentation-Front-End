@@ -1105,7 +1105,7 @@ const NO_RESULT = { upper: null, lower: null };
 const NO_LABELS = { upper: [], lower: [] };
 // TESTING ONLY: true = Generate Trimline / Trim Model / Add Base work after a new upload
 // without running Clean Model or Identify LAT again (the old Output folder is kept)
-const KEEP_OUTPUT_ON_UPLOAD = true;
+const KEEP_OUTPUT_ON_UPLOAD = false;
 const NO_PARTS = { upper: null, lower: null };
 
 const STEP_ORDER = ["cleanModel", "generateTrimline", "trimModel", "addBase", "identifyLat", "segment"];
@@ -1900,6 +1900,9 @@ const viewCurves = view === "identifyLat" ? latCurves : NO_CURVES;
 //   view === "segment" ? segParts : view === "automaticSetup" ? setupParts : NO_PARTS;
 
 // Automatic Setup view: the moved teeth from the exe + the gum from the Segment step
+// const isGumPart = (p) => p.name.toLowerCase().includes("gum");
+// const isGumPart = (p) => /gum|modelwithbase/i.test(p.name);
+
 const isGumPart = (p) => p.name.toLowerCase().includes("gum");
 const setupWithGum = (jaw) => {
   const teeth = setupParts[jaw];
