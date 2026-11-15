@@ -1411,8 +1411,11 @@ const VIEW_SETTINGS = {
   "Back View":   { dir: [0, 1, 0],  up: [0, 0, 1], w: "x", h: "z", d: "y" },
   "Top View":    { dir: [0, 0, 1],  up: [0, 1, 0], w: "x", h: "y", d: "z" },
   "Bottom View": { dir: [0, 0, -1], up: [0, 1, 0], w: "x", h: "y", d: "z" },
-  "Left View":   { dir: [-1, 0, 0], up: [0, 0, 1], w: "y", h: "z", d: "x" },
-  "Right View":  { dir: [1, 0, 0],  up: [0, 0, 1], w: "y", h: "z", d: "x" },
+  // "Left View":   { dir: [-1, 0, 0], up: [0, 0, 1], w: "y", h: "z", d: "x" },
+  // "Left View":   { dir: [-1, -0.5, 0.15], up: [0, 0, 1], w: "y", h: "z", d: "x" },
+  "Left View": { dir: [-1, -0.5, -0.2], up: [0, 0, 1], w: "y", h: "z", d: "x" },
+  // "Right View":  { dir: [1, 0, 0],  up: [0, 0, 1], w: "y", h: "z", d: "x" },
+  "Right View": { dir: [1, -0.5, -0.2], up: [0, 0, 1], w: "y", h: "z", d: "x" },
 };
 
 function ViewController({ targetRef, viewRequest }) {

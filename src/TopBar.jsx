@@ -805,7 +805,7 @@ export default function TopBar({
   message,
 }) {
   const [activeTab, setActiveTab] = useState("File");
-   const [activeView, setActiveView] = useState("Front View"); // the view button shown in blue
+   const [activeView, setActiveView] = useState(null); // the view button shown in blue
   const upperInputRef = useRef(null);
   const lowerInputRef = useRef(null);
 
@@ -1073,6 +1073,7 @@ const styles = {
     background: "#6b6b6b", // grey
     display: "flex",
     alignItems: "center",
+    justifyContent: "center",
     padding: "0 16px",
     gap: 12,
     boxSizing: "border-box",
