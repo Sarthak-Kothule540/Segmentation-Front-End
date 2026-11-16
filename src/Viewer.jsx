@@ -1407,16 +1407,58 @@ function FrontView({ targetRef, fitKey }) {
 
 // Moves the camera to Front / Back / Top / Bottom / Left / Right when a view button is clicked
 const VIEW_SETTINGS = {
-  "Front View":  { dir: [0, -1, 0], up: [0, 0, 1], w: "x", h: "z", d: "y" },
-  "Back View":   { dir: [0, 1, 0],  up: [0, 0, 1], w: "x", h: "z", d: "y" },
-  "Top View":    { dir: [0, 0, 1],  up: [0, 1, 0], w: "x", h: "y", d: "z" },
-  "Bottom View": { dir: [0, 0, -1], up: [0, 1, 0], w: "x", h: "y", d: "z" },
-  // "Left View":   { dir: [-1, 0, 0], up: [0, 0, 1], w: "y", h: "z", d: "x" },
-  // "Left View":   { dir: [-1, -0.5, 0.15], up: [0, 0, 1], w: "y", h: "z", d: "x" },
-  "Left View": { dir: [-1, -0.5, -0.2], up: [0, 0, 1], w: "y", h: "z", d: "x" },
-  // "Right View":  { dir: [1, 0, 0],  up: [0, 0, 1], w: "y", h: "z", d: "x" },
-  "Right View": { dir: [1, -0.5, -0.2], up: [0, 0, 1], w: "y", h: "z", d: "x" },
+  "Front View":  { dir: [0, -1, -0.1], up: [0, 0, 1], w: "x", h: "z", d: "y" },
+  // "Back View":   { dir: [0, 1, -0.25],  up: [0, 0, 1], w: "x", h: "z", d: "y" },
+  "Back View":   { dir: [0, 1, -0.12],  up: [0, 0, 1], w: "x", h: "z", d: "y", shiftX: 0.05, shiftZ: 0.05 },
+  "Top View":    { dir: [0, 0, 1],  up: [0, -1, 0], w: "x", h: "y", d: "z",shiftY: -0.04},
+  "Bottom View": { dir: [0, 0, -1], up: [0.001, 1, 0.1], w: "x", h: "y", d: "z",shiftX: 0.1, shiftY: -0.07 },
+  "Left View": { dir: [-1, -0.2, -0.001], up: [0, -0.15, 1], w: "y", h: "z", d: "x" },
+ "Right View": { dir: [1, -0.2, -0.001], up: [0, -0.15, 1], w: "y", h: "z", d: "x" },
 };
+
+// function ViewController({ targetRef, viewRequest }) {
+//   const { camera, controls, size } = useThree();
+
+//   useEffect(() => {
+//     if (!viewRequest) return;
+//     const cfg = VIEW_SETTINGS[viewRequest.name];
+//     const group = targetRef.current;
+//     if (!cfg || !group) return;
+
+//     const box = new THREE.Box3().setFromObject(group);
+//     if (box.isEmpty()) return;
+
+//     const center = box.getCenter(new THREE.Vector3());
+//     const s = box.getSize(new THREE.Vector3());
+
+//     const fov = (camera.fov * Math.PI) / 180;
+//     const aspect = size.width / size.height;
+//     const distForHeight = s[cfg.h] / 2 / Math.tan(fov / 2);
+//     const distForWidth = s[cfg.w] / 2 / (Math.tan(fov / 2) * aspect);
+//     const distance = Math.max(distForHeight, distForWidth) * FIT_MARGIN + s[cfg.d] / 2;
+
+//     camera.up.set(...cfg.up);
+//     camera.position.set(
+//       center.x + cfg.dir[0] * distance,
+//       center.y + cfg.dir[1] * distance,
+//       center.z + cfg.dir[2] * distance
+//     );
+//     camera.near = distance / 100;
+//     camera.far = distance * 100;
+//     camera.updateProjectionMatrix();
+//     camera.lookAt(center);
+
+//     if (controls) {
+//       controls.target.copy(center);
+//       controls.update();
+//     }
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, [viewRequest]);
+
+//   return null;
+// }
+
+
 
 function ViewController({ targetRef, viewRequest }) {
   const { camera, controls, size } = useThree();
@@ -1439,19 +1481,25 @@ function ViewController({ targetRef, viewRequest }) {
     const distForWidth = s[cfg.w] / 2 / (Math.tan(fov / 2) * aspect);
     const distance = Math.max(distForHeight, distForWidth) * FIT_MARGIN + s[cfg.d] / 2;
 
+    // move the look-at point by a fraction of the model size
+    const target = center.clone();
+    target.x += s.x * (cfg.shiftX || 0);
+    target.y += s.y * (cfg.shiftY || 0);
+    target.z += s.z * (cfg.shiftZ || 0);
+
     camera.up.set(...cfg.up);
     camera.position.set(
-      center.x + cfg.dir[0] * distance,
-      center.y + cfg.dir[1] * distance,
-      center.z + cfg.dir[2] * distance
+      target.x + cfg.dir[0] * distance,
+      target.y + cfg.dir[1] * distance,
+      target.z + cfg.dir[2] * distance
     );
     camera.near = distance / 100;
     camera.far = distance * 100;
     camera.updateProjectionMatrix();
-    camera.lookAt(center);
+    camera.lookAt(target);
 
     if (controls) {
-      controls.target.copy(center);
+      controls.target.copy(target);
       controls.update();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1459,7 +1507,6 @@ function ViewController({ targetRef, viewRequest }) {
 
   return null;
 }
-
 
 // A light that always shines from the camera towards the model
 
