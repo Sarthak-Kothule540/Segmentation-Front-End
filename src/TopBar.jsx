@@ -784,6 +784,68 @@ const TABS = ["File", "Clean Model", "Segment", "Automatic Setup"];
 const CLEAN_MODEL_TOOLS = ["Clean Model", "Generate Trimline", "Trim Model", "Add Base"];
 const VIEWS = ["Front View", "Back View", "Top View", "Bottom View", "Left View", "Right View"];
 
+const svgProps = {
+  width: 30,
+  height: 30,
+  viewBox: "0 0 32 32",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+};
+
+// two stacked jaws seen from the front or back
+const FrontIcon = () => (
+  <svg {...svgProps}>
+    <path d="M5 13 C5 8 27 8 27 13 C27 16 5 16 5 13 Z" />
+    <path d="M5 21 C5 16 27 16 27 21 C27 24 5 24 5 21 Z" />
+  </svg>
+);
+const BackIcon = () => (
+  <svg {...svgProps}>
+    <path d="M5 13 C5 8 27 8 27 13 C27 16 5 16 5 13 Z" />
+    <path d="M5 21 C5 16 27 16 27 21 C27 24 5 24 5 21 Z" />
+    <path d="M11 13 H21" />
+  </svg>
+);
+// upper jaw arch (maxillary)
+const TopIcon = () => (
+  <svg {...svgProps}>
+    <path d="M7 27 V14 A9 9 0 0 1 25 14 V27" />
+    <path d="M13 27 V14 A3 3 0 0 1 19 14 V27" />
+  </svg>
+);
+// lower jaw arch (mandibular)
+const BottomIcon = () => (
+  <svg {...svgProps}>
+    <path d="M7 5 V18 A9 9 0 0 0 25 18 V5" />
+    <path d="M13 5 V18 A3 3 0 0 0 19 18 V5" />
+  </svg>
+);
+// side view: upper and lower jaw wedges
+const LeftIcon = () => (
+  <svg {...svgProps}>
+    <path d="M4 12 C10 8 22 8 28 12 C22 14 10 14 4 12 Z" />
+    <path d="M4 21 C10 17 22 17 28 21 C22 23 10 23 4 21 Z" />
+  </svg>
+);
+const RightIcon = () => (
+  <svg {...svgProps} style={{ transform: "scaleX(-1)" }}>
+    <path d="M4 12 C10 8 22 8 28 12 C22 14 10 14 4 12 Z" />
+    <path d="M4 21 C10 17 22 17 28 21 C22 23 10 23 4 21 Z" />
+  </svg>
+);
+
+const VIEW_ICONS = {
+  "Front View": <FrontIcon />,
+  "Back View": <BackIcon />,
+  "Top View": <TopIcon />,
+  "Bottom View": <BottomIcon />,
+  "Left View": <LeftIcon />,
+  "Right View": <RightIcon />,
+};
+
   
 
 export default function TopBar({
@@ -957,24 +1019,25 @@ export default function TopBar({
         )}
       </div>
 
-            <div style={styles.thirdBar}>
-        {VIEWS.map((v) => (
-          <button
-            key={v}
-            style={{
-              ...styles.viewButton,
-              background: activeView === v ? "#4f8cff" : "#8a8a8a",
-              border: activeView === v ? "1px solid #4f8cff" : "1px solid #a0a0a0",
-            }}
-            onClick={() => {
-              setActiveView(v);
-              onViewChange && onViewChange(v);
-            }}
-          >
-            {v}
-          </button>
-        ))}
-      </div>
+           <div style={styles.thirdBar}>
+  {VIEWS.map((v) => (
+    <button
+      key={v}
+      style={{
+        ...styles.viewButton,
+        background: activeView === v ? "#e3dbf7" : "transparent",
+        color: activeView === v ? "#6a4fd0" : "#333",
+      }}
+      onClick={() => {
+        setActiveView(v);
+        onViewChange && onViewChange(v);
+      }}
+    >
+      {VIEW_ICONS[v]}
+      <span style={styles.viewLabel}>{v}</span>
+    </button>
+  ))}
+</div>
 
 
                    
@@ -1068,25 +1131,50 @@ const styles = {
     cursor: "pointer",
     fontSize: 14,
   },
-    thirdBar: {
-    height: 44,
-    background: "#6b6b6b", // grey
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "0 16px",
-    gap: 12,
-    boxSizing: "border-box",
-  },
-  viewButton: {
-    padding: "6px 16px",
-    background: "#8a8a8a",
-    color: "white",
-    border: "1px solid #a0a0a0",
-    borderRadius: 4,
-    cursor: "pointer",
-    fontSize: 14,
-  },
+  //   thirdBar: {
+  //   height: 44,
+  //   background: "#6b6b6b", // grey
+  //   display: "flex",
+  //   alignItems: "center",
+  //   justifyContent: "center",
+  //   padding: "0 16px",
+  //   gap: 12,
+  //   boxSizing: "border-box",
+  // },
+  // viewButton: {
+  //   padding: "6px 16px",
+  //   background: "#8a8a8a",
+  //   color: "white",
+  //   border: "1px solid #a0a0a0",
+  //   borderRadius: 4,
+  //   cursor: "pointer",
+  //   fontSize: 14,
+  // },
 
+
+  thirdBar: {
+  minHeight: 70,
+  background: "#f2f2f2",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "6px 16px",
+  gap: 10,
+  boxSizing: "border-box",
+},
+viewButton: {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 4,
+  padding: "6px 14px",
+  border: "none",
+  borderRadius: 6,
+  cursor: "pointer",
+  minWidth: 84,
+},
+viewLabel: {
+  fontSize: 12,
+},
 
 };

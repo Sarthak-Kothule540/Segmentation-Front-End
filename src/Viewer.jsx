@@ -1412,7 +1412,7 @@ const VIEW_SETTINGS = {
   "Back View":   { dir: [0, 1, -0.12],  up: [0, 0, 1], w: "x", h: "z", d: "y", shiftX: 0.05, shiftZ: 0.05 },
   "Top View":    { dir: [0, 0, 1],  up: [0, -1, 0], w: "x", h: "y", d: "z",shiftY: -0.04},
   "Bottom View": { dir: [0, 0, -1], up: [0.001, 1, 0.1], w: "x", h: "y", d: "z",shiftX: 0.1, shiftY: -0.07 },
-  "Left View": { dir: [-1, -0.2, -0.001], up: [0, -0.15, 1], w: "y", h: "z", d: "x" },
+  "Left View": { dir: [-1, -0.2, -0.001], up: [0, -0.05, 1], w: "y", h: "z", d: "x",shiftZ: -0.05 },
  "Right View": { dir: [1, -0.2, -0.001], up: [0, -0.15, 1], w: "y", h: "z", d: "x" },
 };
 
