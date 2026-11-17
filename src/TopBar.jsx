@@ -783,6 +783,28 @@ import ProgressBar from "./ProgressBar.jsx";
 const TABS = ["File", "Clean Model", "Segment", "Automatic Setup"];
 const CLEAN_MODEL_TOOLS = ["Clean Model", "Generate Trimline", "Trim Model", "Add Base"];
 const VIEWS = ["Front View", "Back View", "Top View", "Bottom View", "Left View", "Right View"];
+// const hoverOn = (e) => (e.currentTarget.style.background = "#505050");
+// const hoverOff = (e) => (e.currentTarget.style.background = "transparent");
+
+const ACTIVE_COLOR = "#4f8cff";
+const HOVER_COLOR = "#505050";
+
+// hover shows a grey box, but never replaces the blue of the active button
+const hoverOn = (e) => {
+  if (e.currentTarget.dataset.active !== "true") e.currentTarget.style.background = HOVER_COLOR;
+};
+const hoverOff = (e) => {
+  e.currentTarget.style.background =
+    e.currentTarget.dataset.active === "true" ? ACTIVE_COLOR : "transparent";
+};
+
+// which view each Clean Model tool shows
+const TOOL_VIEW = {
+  "Clean Model": "cleanModel",
+  "Generate Trimline": "generateTrimline",
+  "Trim Model": "trimModel",
+  "Add Base": "addBase",
+};
 
 const svgProps = {
   width: 30,
@@ -817,8 +839,8 @@ const svgProps = {
 
 
 const jawProps = {
-  width: 46,
-  height: 40,
+  width: 34,
+  height: 30,
   viewBox: "0 0 48 40",
   strokeLinecap: "round",
   strokeLinejoin: "round",
@@ -1673,9 +1695,19 @@ export default function TopBar({
         {activeTab === "File" && (
           <>
             <div style={styles.row}>
-              <button style={styles.browseButton} onClick={() => upperInputRef.current.click()}>
+              {/* <button style={styles.browseButton} onClick={() => upperInputRef.current.click()}>
                 Browse
-              </button>
+              </button> */}
+              <button
+            style={styles.browseButton}
+            onClick={() => upperInputRef.current.click()}
+           onMouseEnter={hoverOn}
+           onMouseLeave={hoverOff}
+           >
+         Browse
+         </button>
+            
+
               <span style={styles.label}>
                 Upload Upper Scan <span style={styles.required}>*</span>
               </span>
@@ -1690,9 +1722,19 @@ export default function TopBar({
             </div>
 
             <div style={styles.row}>
-              <button style={styles.browseButton} onClick={() => lowerInputRef.current.click()}>
+              {/* <button style={styles.browseButton} onClick={() => lowerInputRef.current.click()}>
                 Browse
-              </button>
+              </button> */}
+
+              <button
+            style={styles.browseButton}
+           onClick={() => lowerInputRef.current.click()}
+           onMouseEnter={hoverOn}
+           onMouseLeave={hoverOff}
+           >
+          Browse
+          </button>
+
               <span style={styles.label}>
                 Upload Lower Scan <span style={styles.required}>*</span>
               </span>
@@ -1715,33 +1757,87 @@ export default function TopBar({
 
         {activeTab === "Clean Model" && (
           <div style={styles.toolRow}>
-            {CLEAN_MODEL_TOOLS.map((tool) => (
+            {/* {CLEAN_MODEL_TOOLS.map((tool) => (
               <button
-                key={tool}
-                style={styles.toolButton}
-                onClick={() => onToolClick && onToolClick(tool)}
-              >
+             key={tool}
+            style={styles.toolButton}
+            onClick={() => onToolClick && onToolClick(tool)}
+             onMouseEnter={hoverOn}
+             onMouseLeave={hoverOff}
+            >
                 {tool}
               </button>
-            ))}
+            ))} */}
+
+           {CLEAN_MODEL_TOOLS.map((tool) => {
+          const isActive = view === TOOL_VIEW[tool];
+     return (
+    <button
+      key={tool}
+      data-active={isActive}
+      style={{ ...styles.toolButton, background: isActive ? ACTIVE_COLOR : "transparent" }}
+      onClick={() => onToolClick && onToolClick(tool)}
+      onMouseEnter={hoverOn}
+      onMouseLeave={hoverOff}
+    >
+      {tool}
+    </button>
+  );
+})}
+          
+
           </div>
         )}
 
         {activeTab === "Segment" && (
           <div style={styles.toolRow}>
-            <button
-              style={{ ...styles.toolButton, opacity: busy ? 0.5 : 1 }}
-              disabled={busy}
-              onClick={onIdentifyLat}
-            >
+           {/* <button
+            style={{ ...styles.toolButton, opacity: busy ? 0.5 : 1 }}
+           disabled={busy}
+           onClick={onIdentifyLat}
+          onMouseEnter={hoverOn}
+           onMouseLeave={hoverOff}
+           >
               Identify LAT
-            </button>
-            <button
+            </button> */}
+
+          <button
+  data-active={view === "identifyLat"}
+  style={{
+    ...styles.toolButton,
+    background: view === "identifyLat" ? ACTIVE_COLOR : "transparent",
+    opacity: busy ? 0.5 : 1,
+  }}
+  disabled={busy}
+  onClick={onIdentifyLat}
+  onMouseEnter={hoverOn}
+  onMouseLeave={hoverOff}
+>
+  Identify LAT
+</button>
+           
+
+            {/* <button
           style={{ ...styles.toolButton, opacity: busy ? 0.5 : 1 }}
           disabled={busy}
           onClick={onSegment}>
           Segment
-         </button>
+         </button> */}
+
+         <button
+  data-active={view === "segment"}
+  style={{
+    ...styles.toolButton,
+    background: view === "segment" ? ACTIVE_COLOR : "transparent",
+    opacity: busy ? 0.5 : 1,
+  }}
+  disabled={busy}
+  onClick={onSegment}
+  onMouseEnter={hoverOn}
+  onMouseLeave={hoverOff}
+>
+  Segment
+</button>
         
 
           </div>
@@ -1749,21 +1845,40 @@ export default function TopBar({
 
      {activeTab === "Automatic Setup" && setupReady && (
   <div style={styles.toolRow}>
-    <button
+    {/* <button
       style={{
         ...styles.toolButton,
-        background: view === "segment" ? "#4f8cff" : "#5a5a5a",
+        // background: view === "segment" ? "#4f8cff" : "#5a5a5a",
+        background: view === "segment" ? "#4f8cff" : "transparent",
         opacity: busy ? 0.5 : 1,
       }}
       disabled={busy}
       onClick={onInitialPosition}
     >
       Initial Position
-    </button>
+    </button> */}
+
+   <button
+  data-active={view === "segment"}
+  style={{
+    ...styles.toolButton,
+    background: view === "segment" ? ACTIVE_COLOR : "transparent",
+    opacity: busy ? 0.5 : 1,
+  }}
+  disabled={busy}
+  onClick={onInitialPosition}
+  onMouseEnter={hoverOn}
+  onMouseLeave={hoverOff}
+>
+  Initial Position
+</button>
+
+
     <button
       style={{
         ...styles.toolButton,
-        background: view === "automaticSetup" ? "#4f8cff" : "#5a5a5a",
+        // background: view === "automaticSetup" ? "#4f8cff" : "#5a5a5a",
+        background: view === "automaticSetup" ? "#4f8cff" : "transparent",
         opacity: busy ? 0.5 : 1,
       }}
       disabled={busy}
@@ -1789,8 +1904,8 @@ export default function TopBar({
       key={v}
       style={{
         ...styles.viewButton,
-        background: activeView === v ? "#e3dbf7" : "transparent",
-        color: activeView === v ? "#6a4fd0" : "#333",
+        background: activeView === v ? "#4f8cff" : "transparent",
+        color: activeView === v ? "#ffffff" : "#ffffff",
       }}
       onClick={() => {
         setActiveView(v);
@@ -1831,17 +1946,30 @@ const styles = {
     color: "#ffffff",
     fontSize: 14,
   },
+  // secondBar: {
+  //   position: "relative", // needed to center the progress bar inside this bar
+  //   minHeight: 100,
+  //   background: "#3b3b3b",
+  //   padding: "12px 16px",
+  //   display: "flex",
+  //   flexDirection: "column",
+  //   justifyContent: "center",
+  //   gap: 12,
+  //   boxSizing: "border-box",
+  // },
+
   secondBar: {
-    position: "relative", // needed to center the progress bar inside this bar
-    minHeight: 100,
-    background: "#3b3b3b",
-    padding: "12px 16px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    gap: 12,
-    boxSizing: "border-box",
-  },
+  position: "relative",
+  height: 70,                 // fixed height instead of minHeight
+  background: "#3b3b3b",
+  padding: "0 16px",          // no top/bottom padding, so centering is exact
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",   // centers the buttons vertically
+  gap: 8,                     // space between the two File rows
+  boxSizing: "border-box",
+},
+
   progressWrapper: {
     position: "absolute",
     top: 0,
@@ -1858,15 +1986,26 @@ const styles = {
     alignItems: "center",
     gap: 14,
   },
-  browseButton: {
-    padding: "6px 16px",
-    background: "#5a5a5a",
-    color: "white",
-    border: "1px solid #777",
-    borderRadius: 4,
-    cursor: "pointer",
-    fontSize: 14,
-  },
+  // browseButton: {
+  //   padding: "6px 16px",
+  //   background: "#5a5a5a",
+  //   color: "white",
+  //   border: "1px solid #777",
+  //   borderRadius: 4,
+  //   cursor: "pointer",
+  //   fontSize: 14,
+  // },
+
+browseButton: {
+  padding: "6px 16px",
+  background: "transparent",   // was "#5a5a5a"
+  color: "white",
+  border: "none",              // was "1px solid #777"
+  borderRadius: 4,
+  cursor: "pointer",
+  fontSize: 14,
+},
+
   label: {
     color: "#e0e0e0",
     fontSize: 14,
@@ -1886,15 +2025,41 @@ const styles = {
     alignItems: "center",
     gap: 16,
   },
-  toolButton: {
-    padding: "10px 22px",
-    background: "#5a5a5a",
-    color: "white",
-    border: "1px solid #777",
-    borderRadius: 4,
-    cursor: "pointer",
-    fontSize: 14,
-  },
+  // toolButton: {
+  //   padding: "10px 22px",
+  //   background: "#5a5a5a",
+  //   color: "white",
+  //   border: "1px solid #777",
+  //   borderRadius: 4,
+  //   cursor: "pointer",
+  //   fontSize: 14,
+  // },
+
+// toolButton: {
+//   padding: "10px 22px",
+//   background: "transparent",   // was "#5a5a5a"
+//   color: "white",
+//   border: "none",              // was "1px solid #777"
+//   borderRadius: 4,
+//   cursor: "pointer",
+//   fontSize: 14,
+// },
+
+
+toolButton: {
+  height: 72,            // taller than wide = vertical box
+  minWidth: 84,
+  padding: "0 14px",
+  background: "transparent",
+  color: "white",
+  border: "none",
+  borderRadius: 8,
+  cursor: "pointer",
+  fontSize: 14,
+},
+
+
+
   //   thirdBar: {
   //   height: 44,
   //   background: "#6b6b6b", // grey
@@ -1917,13 +2082,13 @@ const styles = {
 
 
   thirdBar: {
-  minHeight: 70,
-  background: "#6b6b6b",
+  minHeight: 56,
+  background: "#0b0b0b",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   padding: "6px 16px",
-  gap: 10,
+  gap: 6,
   boxSizing: "border-box",
 },
 viewButton: {
@@ -1931,11 +2096,11 @@ viewButton: {
   flexDirection: "column",
   alignItems: "center",
   gap: 4,
-  padding: "6px 14px",
+  padding: "3px 8px",
   border: "none",
   borderRadius: 6,
   cursor: "pointer",
-  minWidth: 84,
+  minWidth: 64,
 },
 viewLabel: {
   fontSize: 12,
