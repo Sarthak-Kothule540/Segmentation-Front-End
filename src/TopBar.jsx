@@ -1747,6 +1747,7 @@ export default function TopBar({
                 style={{ display: "none" }}
               />
             </div>
+            
           </>
         )}
 
@@ -1899,7 +1900,7 @@ export default function TopBar({
       </div>
 
            <div style={styles.thirdBar}>
-  {VIEWS.map((v) => (
+  {/* {VIEWS.map((v) => (
     <button
       key={v}
       style={{
@@ -1915,7 +1916,32 @@ export default function TopBar({
       {VIEW_ICONS[v]}
       <span style={styles.viewLabel}>{v}</span>
     </button>
-  ))}
+  ))} */}
+
+{VIEWS.map((v) => {
+  const isActive = activeView === v;
+  return (
+    <button
+      key={v}
+      data-active={isActive}
+      style={{
+        ...styles.viewButton,
+        background: isActive ? ACTIVE_COLOR : "transparent",
+        color: "#ffffff",
+      }}
+      onClick={() => {
+        setActiveView(v);
+        onViewChange && onViewChange(v);
+      }}
+      onMouseEnter={hoverOn}
+      onMouseLeave={hoverOff}
+    >
+      {VIEW_ICONS[v]}
+      <span style={styles.viewLabel}>{v}</span>
+    </button>
+  );
+})}
+
 </div>
 
 
@@ -2023,7 +2049,7 @@ browseButton: {
   toolRow: {
     display: "flex",
     alignItems: "center",
-    gap: 16,
+    gap: 1,
   },
   // toolButton: {
   //   padding: "10px 22px",
@@ -2048,8 +2074,8 @@ browseButton: {
 
 toolButton: {
   height: 72,            // taller than wide = vertical box
-  minWidth: 84,
-  padding: "0 14px",
+  minWidth: 64,
+  padding: "0 10px",
   background: "transparent",
   color: "white",
   border: "none",
