@@ -1091,6 +1091,9 @@ import Viewer from "./Viewer.jsx";
 import VisibilityButtons from "./VisibilityButtons.jsx";
 import { parseStl } from "./stlUtils.js";
 import { removeTeeth } from "./gumUtils.js";
+import { deformGum } from "./gumDeform.js";
+
+
 // import { loadLatCurves, loadStlParts, saveLatCurve } from "./latUtils.js";
 
 // import { loadLatCurves, loadStlParts, saveLatCurve, loadPointsFile, loadStlFile } from "./latUtils.js";
@@ -1939,11 +1942,31 @@ const wholeGum = useMemo(() => {
   return { upper: build(segParts.upper), lower: build(segParts.lower) };
 }, [segParts]);
 
+// gum that follows the moved teeth (Automatic Setup result)
+const deformedGum = useMemo(() => {
+  const build = (jaw) => {
+    const moved = setupParts[jaw];
+    if (!moved || moved.some(isGumPart)) return null;
+    const base = wholeGum[jaw] || (segParts[jaw] || []).find(isGumPart);
+    if (!base) return null;
+    const orig = (segParts[jaw] || []).filter((p) => !isGumPart(p) && !isWholePart(p));
+    const geo = deformGum(base.geo, orig, moved);
+    return geo ? { name: "GumDeformed.stl", geo } : null;
+  };
+  return { upper: build("upper"), lower: build("lower") };
+}, [setupParts, segParts, wholeGum]);
+
 const setupWithGum = (jaw) => {
   const teeth = setupParts[jaw];
   if (!teeth) return null;
   if (teeth.some(isGumPart)) return teeth; // the exe already made a gum, so use it
-  const gum = wholeGum[jaw]
+  // const gum = wholeGum[jaw]
+  //   ? [wholeGum[jaw]]
+  //   : (segParts[jaw] || []).filter((p) => isGumPart(p)); // fallback: plain Gum.stl
+
+    const gum = deformedGum[jaw]
+    ? [deformedGum[jaw]]
+    : wholeGum[jaw]
     ? [wholeGum[jaw]]
     : (segParts[jaw] || []).filter((p) => isGumPart(p)); // fallback: plain Gum.stl
   return [...gum, ...teeth];

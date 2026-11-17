@@ -1410,10 +1410,19 @@ const VIEW_SETTINGS = {
   "Front View":  { dir: [0, -1, -0.1], up: [0, 0, 1], w: "x", h: "z", d: "y" },
   // "Back View":   { dir: [0, 1, -0.25],  up: [0, 0, 1], w: "x", h: "z", d: "y" },
   "Back View":   { dir: [0, 1, -0.12],  up: [0, 0, 1], w: "x", h: "z", d: "y", shiftX: 0.05, shiftZ: 0.05 },
-  "Top View":    { dir: [0, 0, 1],  up: [0, -1, 0], w: "x", h: "y", d: "z",shiftY: -0.04},
-  "Bottom View": { dir: [0, 0, -1], up: [0.001, 1, 0.1], w: "x", h: "y", d: "z",shiftX: 0.1, shiftY: -0.07 },
+  // "Top View":    { dir: [0, 0, 1],  up: [0, -1, 0], w: "x", h: "y", d: "z",shiftY: -0.04},
+  // "Bottom View": { dir: [0, 0, -1], up: [0.001, 1, 0.1], w: "x", h: "y", d: "z",shiftX: 0.1, shiftY: -0.07 },
+  "Top View":    { dir: [0, 0, 1],  up: [0, 1, 0], w: "x", h: "y", d: "z", shiftY: -0.04 },
+"Bottom View": { dir: [0, 0, -1], up: [0.001, -1, 0], w: "x", h: "y", d: "z", shiftX: 0.1, shiftY: -0.07 },
+
   "Left View": { dir: [-1, -0.2, -0.001], up: [0, -0.05, 1], w: "y", h: "z", d: "x",shiftZ: -0.05 },
  "Right View": { dir: [1, -0.2, -0.001], up: [0, -0.15, 1], w: "y", h: "z", d: "x" },
+};
+
+// the Left and Right buttons use each other's camera
+const VIEW_SWAP = {
+  "Left View": "Right View",
+  "Right View": "Left View",
 };
 
 // function ViewController({ targetRef, viewRequest }) {
@@ -1465,7 +1474,8 @@ function ViewController({ targetRef, viewRequest }) {
 
   useEffect(() => {
     if (!viewRequest) return;
-    const cfg = VIEW_SETTINGS[viewRequest.name];
+    // const cfg = VIEW_SETTINGS[viewRequest.name];
+    const cfg = VIEW_SETTINGS[VIEW_SWAP[viewRequest.name] || viewRequest.name];
     const group = targetRef.current;
     if (!cfg || !group) return;
 

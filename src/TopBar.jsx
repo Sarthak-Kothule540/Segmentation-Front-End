@@ -796,54 +796,818 @@ const svgProps = {
 };
 
 // two stacked jaws seen from the front or back
-const FrontIcon = () => (
-  <svg {...svgProps}>
-    <path d="M5 13 C5 8 27 8 27 13 C27 16 5 16 5 13 Z" />
-    <path d="M5 21 C5 16 27 16 27 21 C27 24 5 24 5 21 Z" />
+// const FrontIcon = () => (
+//   <svg {...svgProps}>
+//     <path d="M5 13 C5 8 27 8 27 13 C27 16 5 16 5 13 Z" />
+//     <path d="M5 21 C5 16 27 16 27 21 C27 24 5 24 5 21 Z" />
+//   </svg>
+// );
+// const BackIcon = () => (
+//   <svg {...svgProps}>
+//     <path d="M5 13 C5 8 27 8 27 13 C27 16 5 16 5 13 Z" />
+//     <path d="M5 21 C5 16 27 16 27 21 C27 24 5 24 5 21 Z" />
+//     <path d="M11 13 H21" />
+//   </svg>
+// );
+
+
+// Front View: two stacked curved rectangles
+// Front View: traced from the hand-drawn sketch
+// Front View: two identical bands
+
+
+const jawProps = {
+  width: 46,
+  height: 40,
+  viewBox: "0 0 48 40",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+};
+
+const EDGE = "#c9cfd8";
+
+const Defs = ({ id, dim }) => (
+  <defs>
+    <linearGradient id={`gum-${id}`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stopColor="#ff9f99" />
+      <stop offset="0.5" stopColor="#f26f6a" />
+      <stop offset="1" stopColor="#d44d4d" />
+    </linearGradient>
+    <linearGradient id={`tooth-${id}`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stopColor="#ffffff" />
+      <stop offset="1" stopColor={dim ? "#d3d8e0" : "#e8ecf1"} />
+    </linearGradient>
+  </defs>
+);
+
+
+// teeth of one row, from the left premolar to the right premolar
+const FRONT_TEETH = [
+  { type: "premolar", w: 4.2 },
+  { type: "canine", w: 4.0 },
+  { type: "lateral", w: 3.6 },
+  { type: "central", w: 4.8 },
+  { type: "central", w: 4.8 },
+  { type: "lateral", w: 3.6 },
+  { type: "canine", w: 4.0 },
+  { type: "premolar", w: 4.2 },
+];
+
+// gives every tooth its x position and its center, so the row is centered
+const placeFrontTeeth = (gap) => {
+  const total = FRONT_TEETH.reduce((s, t) => s + t.w, 0) + gap * (FRONT_TEETH.length - 1);
+  let x = 24 - total / 2;
+  return FRONT_TEETH.map((t) => {
+    const item = { ...t, x, cx: x + t.w / 2 };
+    x += t.w + gap;
+    return item;
+  });
+};
+
+// one tooth in its own box: flat on the gum side (y = 0), rounded at the biting edge (y = h)
+const frontToothPath = (type, w, h) => {
+  const r = { central: 1.2, lateral: 1.8, canine: w / 2, premolar: 1.6 }[type];
+  return `M0 0 H${w} V${h - r} Q${w} ${h} ${w - r} ${h} H${r} Q0 ${h} 0 ${h - r} Z`;
+};
+
+// ---------- Front / Back ----------
+// const FrontJaw = ({ id, dim, gum, base, toothH }) => {
+//   const N = 8, W = 4.4, GAP = 0.35;
+//   const start = 24 - (N * (W + GAP) - GAP) / 2;
+//   const half = (
+//     <>
+//       {Array.from({ length: N }, (_, i) => {
+//         const cx = start + i * (W + GAP) + W / 2;
+//         const u = (cx - 24) / 20;
+//         const yt = base + 4 * (1 - u * u);
+//         return (
+//           <rect
+//             key={i}
+//             x={cx - W / 2}
+//             y={yt - 1.5}
+//             width={W}
+//             height={toothH + 1.5}
+//             rx={1.6}
+//             fill={`url(#tooth-${id})`}
+//             stroke={EDGE}
+//             strokeWidth={0.5}
+//             transform={`rotate(${-u * 6} ${cx} ${yt})`}
+//           />
+//         );
+//       })}
+//       <path d={gum} fill={`url(#gum-${id})`} />
+//     </>
+//   );
+//   return (
+//     <svg {...jawProps}>
+//       <Defs id={id} dim={dim} />
+//       {half}
+//       <g transform="translate(0 40) scale(1 -1)">{half}</g>
+//     </svg>
+//   );
+// };
+
+
+const FrontJaw = ({ id, dim, gum, base, toothH }) => {
+  const teeth = placeFrontTeeth(0.35);
+  const half = (
+    <>
+      {teeth.map((t, i) => {
+        const u = (t.cx - 24) / 20;
+        const yt = base + 4 * (1 - u * u);
+        return (
+          <path
+            key={i}
+            d={frontToothPath(t.type, t.w, toothH + 1.5)}
+            transform={`rotate(${-u * 6} ${t.cx} ${yt}) translate(${t.x} ${yt - 1.5})`}
+            fill={`url(#tooth-${id})`}
+            stroke={EDGE}
+            strokeWidth={0.5}
+          />
+        );
+      })}
+      <path d={gum} fill={`url(#gum-${id})`} />
+    </>
+  );
+  // return (
+  //   <svg {...jawProps}>
+  //     <Defs id={id} dim={dim} />
+  //     {half}
+  //     <g transform="translate(0 40) scale(1 -1)">{half}</g>
+  //   </svg>
+  // );
+   return (
+  <svg {...jawProps}>
+    <Defs id={id} dim={dim} />
+    <g transform="translate(24 20) scale(0.88) translate(-24 -20)">
+      {half}
+      <g transform="translate(0 40) scale(1 -1)">{half}</g>
+    </g>
   </svg>
 );
+
+};
+
+
+
+// const FrontIcon = () => {
+//   const id = "front";
+//   const N = 8;          // teeth per row
+//   const W = 4.2;        // tooth width
+//   const GAP = 0.3;
+//   const start = 24 - (N * (W + GAP) - GAP) / 2;
+
+//   // x center of each tooth, and how far it is from the middle (-1 to 1)
+//   const cols = Array.from({ length: N }, (_, i) => {
+//     const cx = start + i * (W + GAP) + W / 2;
+//     return { cx, u: (cx - 24) / 18 };
+//   });
+
+//   return (
+//     <svg {...jawProps}>
+//       <Defs id={id} />
+
+//       {/* lower teeth */}
+//       {cols.map(({ cx, u }, i) => {
+//         const top = 19.5 + 2 * (1 - u * u); // follows the smile curve
+//         return (
+//           <rect
+//             key={"l" + i}
+//             x={cx - W / 2}
+//             y={top}
+//             width={W}
+//             height={32 - top}
+//             rx={1.6}
+//             fill={`url(#tooth-${id})`}
+//             stroke={EDGE}
+//             strokeWidth={0.5}
+//           />
+//         );
+//       })}
+
+//       {/* lower gum (a bit narrower at the bottom) */}
+//       {/* <path
+//         d="M6 30 Q24 25 42 30 Q43 38 38 38 Q24 40 10 38 Q5 38 6 30 Z"
+//         fill={`url(#gum-${id})`}
+//       /> */}
+
+//       {/* lower gum: the upper gum flipped upside down (same shape and size) */}
+// <path
+//   transform="translate(0 40) scale(1 -1)"
+//   d="M5 8 Q5 3 10 4 Q24 1 38 4 Q43 3 43 8 Q43 12 39 12 Q24 9 9 12 Q5 12 5 8 Z"
+//   fill={`url(#gum-${id})`}
+// />
+
+
+//       {/* upper teeth */}
+//       {cols.map(({ cx, u }, i) => {
+//         const bottom = 18 + 2 * (1 - u * u);
+//         return (
+//           <rect
+//             key={"u" + i}
+//             x={cx - W / 2}
+//             y={8}
+//             width={W}
+//             height={bottom - 8}
+//             rx={1.6}
+//             fill={`url(#tooth-${id})`}
+//             stroke={EDGE}
+//             strokeWidth={0.5}
+//           />
+//         );
+//       })}
+
+//       {/* upper gum */}
+//       <path
+//         d="M5 8 Q5 3 10 4 Q24 1 38 4 Q43 3 43 8 Q43 12 39 12 Q24 9 9 12 Q5 12 5 8 Z"
+//         fill={`url(#gum-${id})`}
+//       />
+//     </svg>
+//   );
+// };
+
+
+const FrontIcon = () => {
+  const id = "front";
+  const teeth = placeFrontTeeth(0.3);
+  const style = { fill: `url(#tooth-${id})`, stroke: EDGE, strokeWidth: 0.5 };
+
+  return (
+    <svg {...jawProps}>
+      <Defs id={id} />
+
+      {/* lower teeth: the same shapes turned upside down */}
+      {teeth.map((t, i) => {
+        const u = (t.cx - 24) / 18;
+        const top = 19.5 + 2 * (1 - u * u); // follows the smile curve
+        return (
+          <path
+            key={"l" + i}
+            transform={`translate(${t.x} 32) scale(1 -1)`}
+            d={frontToothPath(t.type, t.w, 32 - top)}
+            {...style}
+          />
+        );
+      })}
+
+      {/* lower gum: the upper gum flipped upside down */}
+      <path
+        transform="translate(0 40) scale(1 -1)"
+        d="M5 8 Q5 3 10 4 Q24 1 38 4 Q43 3 43 8 Q43 12 39 12 Q24 9 9 12 Q5 12 5 8 Z"
+        fill={`url(#gum-${id})`}
+      />
+
+      {/* upper teeth */}
+      {teeth.map((t, i) => {
+        const u = (t.cx - 24) / 18;
+        const bottom = 18 + 2 * (1 - u * u);
+        return (
+          <path
+            key={"u" + i}
+            transform={`translate(${t.x} 8)`}
+            d={frontToothPath(t.type, t.w, bottom - 8)}
+            {...style}
+          />
+        );
+      })}
+
+      {/* upper gum */}
+      <path
+        d="M5 8 Q5 3 10 4 Q24 1 38 4 Q43 3 43 8 Q43 12 39 12 Q24 9 9 12 Q5 12 5 8 Z"
+        fill={`url(#gum-${id})`}
+      />
+
+       <Defs id={id} />
+    <g transform="translate(24 20) scale(0.88) translate(-24 -20)">
+
+      {/* ...everything that is already there: lower teeth, lower gum, upper teeth, upper gum... */}
+
+    </g>
+    </svg>
+  );
+};
+
+
+// const FrontIcon = () => {
+//   const id = "front";
+//   const N = 10;      // number of teeth per row (was 8)
+//   const UW = 3.3;    // upper tooth width (was 3.9)
+//   const LW = 3.3;    // lower tooth width (was 3.9)
+//   const GAP = 0.3;
+//   const uStart = 24 - (N * (UW + GAP) - GAP) / 2;
+//   const lStart = 24 - (N * (LW + GAP) - GAP) / 2;
+
+//   return (
+//     <svg {...jawProps}>
+//       <Defs id={id} />
+
+//       {/* lower teeth */}
+//       {Array.from({ length: N }, (_, i) => {
+//         const cx = lStart + i * (LW + GAP) + LW / 2;
+//         const u = (cx - 24) / 20;
+//         const top = 18.5 + 2 * (1 - u * u);
+//         return (
+//           <rect
+//             key={"l" + i}
+//             x={cx - LW / 2}
+//             y={top}
+//             width={LW}
+//             height={13}
+//             rx={1.4}
+//             fill={`url(#tooth-${id})`}
+//             stroke={EDGE}
+//             strokeWidth={0.5}
+//           />
+//         );
+//       })}
+
+//       {/* lower gum, moved up 1.5 so it covers more of the teeth */}
+//       <path
+//         transform="translate(0 -1.5)"
+//         d="M3 35 Q3 31 7 31 Q24 26.5 41 31 Q45 31 45 35 Q45 38.5 41 38 Q24 33 7 38 Q3 38.5 3 35 Z"
+//         fill={`url(#gum-${id})`}
+//       />
+
+//       {/* upper teeth */}
+//       {Array.from({ length: N }, (_, i) => {
+//         const cx = uStart + i * (UW + GAP) + UW / 2;
+//         const u = (cx - 24) / 20;
+//         const edge = 19.5 + 2 * (1 - u * u);
+//         return (
+//           <rect
+//             key={"u" + i}
+//             x={cx - UW / 2}
+//             y={7}
+//             width={UW}
+//             height={edge - 7}
+//             rx={1.4}
+//             fill={`url(#tooth-${id})`}
+//             stroke={EDGE}
+//             strokeWidth={0.5}
+//           />
+//         );
+//       })}
+
+//       {/* upper gum, moved down 1.5 so it covers more of the teeth */}
+//       <path
+//         transform="translate(0 1.5)"
+//         d="M3 5 Q3 1.5 7 2.5 Q24 8 41 2.5 Q45 1.5 45 5 Q45 9 41 9 Q24 14 7 9 Q3 9 3 5 Z"
+//         fill={`url(#gum-${id})`}
+//       />
+//     </svg>
+//   );
+// };
+
+
+// const BackIcon = () => (
+//   <FrontJaw
+//     id="back"
+//     dim
+//     base={11}
+//     toothH={5}
+//     gum="M3 6 Q3 1 7 2 Q24 8 41 2 Q45 1 45 6 Q45 12 41 12 Q24 18 7 12 Q3 12 3 6 Z"
+//   />
+// );
+
 const BackIcon = () => (
-  <svg {...svgProps}>
-    <path d="M5 13 C5 8 27 8 27 13 C27 16 5 16 5 13 Z" />
-    <path d="M5 21 C5 16 27 16 27 21 C27 24 5 24 5 21 Z" />
-    <path d="M11 13 H21" />
-  </svg>
+  <FrontJaw
+    id="back"
+    dim
+    base={9.5}   // was 11
+    toothH={6.5} // was 5
+    gum="M3 6 Q3 1 7 2 Q24 8 41 2 Q45 1 45 6 Q45 10.5 41 10.5 Q24 16 7 10.5 Q3 10.5 3 6 Z"
+  />
 );
-// upper jaw arch (maxillary)
-const TopIcon = () => (
-  <svg {...svgProps}>
-    <path d="M7 27 V14 A9 9 0 0 1 25 14 V27" />
-    <path d="M13 27 V14 A3 3 0 0 1 19 14 V27" />
-  </svg>
-);
-// lower jaw arch (mandibular)
-const BottomIcon = () => (
-  <svg {...svgProps}>
-    <path d="M7 5 V18 A9 9 0 0 0 25 18 V5" />
-    <path d="M13 5 V18 A3 3 0 0 0 19 18 V5" />
-  </svg>
-);
-// side view: upper and lower jaw wedges
-const LeftIcon = () => (
-  <svg {...svgProps}>
-    <path d="M4 12 C10 8 22 8 28 12 C22 14 10 14 4 12 Z" />
-    <path d="M4 21 C10 17 22 17 28 21 C22 23 10 23 4 21 Z" />
-  </svg>
-);
-const RightIcon = () => (
-  <svg {...svgProps} style={{ transform: "scaleX(-1)" }}>
-    <path d="M4 12 C10 8 22 8 28 12 C22 14 10 14 4 12 Z" />
-    <path d="M4 21 C10 17 22 17 28 21 C22 23 10 23 4 21 Z" />
-  </svg>
-);
+
+// ---------- Left / Right ----------
+const SideJaw = ({ id, flip }) => {
+  const N = 10, W = 3.7, GAP = 0.3;
+  const start = 24 - (N * (W + GAP) - GAP) / 2;
+  const half = (
+    <>
+      {Array.from({ length: N }, (_, i) => (
+        <rect
+          key={i}
+          x={start + i * (W + GAP)}
+          y={10.5}
+          width={W}
+          height={9}
+          rx={1.5}
+          fill={`url(#tooth-${id})`}
+          stroke={EDGE}
+          strokeWidth={0.5}
+        />
+      ))}
+      <path
+        d="M3 6 Q3 2 7 2 H41 Q45 2 45 6 Q45 12 41 12 H7 Q3 12 3 6 Z"
+        fill={`url(#gum-${id})`}
+      />
+    </>
+  );
+  return (
+    <svg {...jawProps}>
+      <Defs id={id} />
+      <g transform={flip ? "translate(48 0) scale(-1 1)" : undefined}>
+        {half}
+        <g transform="translate(-1.5 40) scale(1 -1)">{half}</g>
+      </g>
+    </svg>
+  );
+};
+
+
+// const SideBite = ({ id, flip }) => {
+//   // back (molars) -> front (incisors)
+//   const W = [6.8, 6.8, 5, 5, 4.2, 3.6, 3.2];
+//   const GAP = 0.3;
+//   const upperBottom = [19, 19.5, 20.5, 21, 22, 21.5, 21]; // biting edge of upper teeth
+//   const lowerTop = [21.5, 21.5, 20.5, 20, 19.5, 19.5, 20]; // top edge of lower teeth
+
+//   const place = (start) => {
+//     let x = start;
+//     return W.map((w) => {
+//       const px = x;
+//       x += w + GAP;
+//       return px;
+//     });
+//   };
+//   const ux = place(5);   // upper row
+//   const lx = place(3.8); // lower row sits slightly behind
+
+//   return (
+//     <svg {...jawProps}>
+//       <Defs id={id} />
+//       <g transform={flip ? "translate(48 0) scale(-1 1)" : undefined}>
+//         {/* lower teeth (drawn first, so the upper teeth overlap them) */}
+//         {W.map((w, i) => (
+//           <rect
+//             key={"l" + i}
+//             x={lx[i]}
+//             y={lowerTop[i]}
+//             width={w}
+//             height={32 - lowerTop[i]}
+//             rx={Math.min(w * 0.35, 2)}
+//             fill={`url(#tooth-${id})`}
+//             stroke={EDGE}
+//             strokeWidth={0.5}
+//           />
+//         ))}
+
+//         {/* lower gum */}
+//         <path
+//           d="M3 34 Q3 30.5 7 30.5 H40 Q43 30.5 43 33.5 Q43 37.5 40 37.5 H7 Q3 38 3 34 Z"
+//           fill={`url(#gum-${id})`}
+//         />
+
+//         {/* upper teeth */}
+//         {W.map((w, i) => (
+//           <rect
+//             key={"u" + i}
+//             x={ux[i]}
+//             y={8}
+//             width={w}
+//             height={upperBottom[i] - 8}
+//             rx={Math.min(w * 0.35, 2)}
+//             fill={`url(#tooth-${id})`}
+//             stroke={EDGE}
+//             strokeWidth={0.5}
+//           />
+//         ))}
+
+//         {/* upper gum */}
+//         <path
+//           d="M3 6 Q3 2.5 7 2.5 H42 Q45 2.5 45 5.5 Q45 9.5 42 9.5 H7 Q3 10 3 6 Z"
+//           fill={`url(#gum-${id})`}
+//         />
+//       </g>
+//     </svg>
+//   );
+// };
+
+// const LeftIcon = () => <SideBite id="left" />;
+// const RightIcon = () => <SideBite id="right" flip />;
+
+
+
+// const SideBite = ({ id, flip }) => {
+//   const N = 7;     // teeth in the strip
+//   const W = 5;   // tooth width
+//   const GAP = 0.4;
+//   const X0 = 6;    // where the first tooth starts
+
+//   // top and bottom edge of the tooth strip (the gap between the two gums)
+//   const topEdge = (x) => 17.0 - ((x - 4) / 40) * 2.5;
+//   const botEdge = (x) => 23.0 + ((x - 4) / 40) * 1.5;
+
+//   return (
+//     <svg {...jawProps}>
+//       <Defs id={id} />
+//       <g transform={flip ? "translate(48 0) scale(-1 1)" : undefined}>
+//         {/* teeth (they get taller towards the right, like the gap does) */}
+//         {/* {Array.from({ length: N }, (_, i) => {
+//           const x = X0 + i * (W + GAP);
+//           const t = topEdge(x + W / 2);
+//           const b = botEdge(x + W / 2);
+//           return (
+//             <rect
+//               key={i}
+//               x={x}
+//               y={t - 0.5}
+//               width={W}
+//               height={b - t + 1}
+//               rx={1.2}
+//               fill={`url(#tooth-${id})`}
+//               stroke={EDGE}
+//               strokeWidth={0.4}
+//             />
+//           );
+//         })} */}
+
+
+//         {/* teeth: upper half and lower half with a small gap in the middle */}
+// {Array.from({ length: N }, (_, i) => {
+//   const x = X0 + i * (W + GAP);
+//   const t = topEdge(x + W / 2) - 0.5;   // top of the tooth
+//   const b = botEdge(x + W / 2) + 0.5;   // bottom of the tooth
+//   const mid = (t + b) / 2;
+//   const BITE_GAP = 1.2;                  // gap between upper and lower teeth
+
+//   return (
+//     <g key={i}>
+//       <rect
+//         x={x}
+//         y={t}
+//         width={W}
+//         height={mid - BITE_GAP / 2 - t}
+//         rx={1.2}
+//         fill={`url(#tooth-${id})`}
+//         stroke={EDGE}
+//         strokeWidth={0.4}
+//       />
+//       <rect
+//         x={x}
+//         y={mid + BITE_GAP / 2}
+//         width={W}
+//         height={b - (mid + BITE_GAP / 2)}
+//         rx={1.2}
+//         fill={`url(#tooth-${id})`}
+//         stroke={EDGE}
+//         strokeWidth={0.4}
+//       />
+//     </g>
+//   );
+// })}
+
+//         {/* upper gum: short on the left, taller on the right */}
+//         <path
+//           // d="M4 15 Q4 12.5 7 12.2 L41 8.2 Q44 8 44 11 L44 16 L4 18.5 Z"
+//           // d="M4 15 Q4 12.5 7 12.2 L41 8.2 Q44 8 44 11 L44 15.2 L4 17.7 Z"
+//           d="M4 15 Q4 12.5 7 12.2 L41 8.2 Q44 8 44 11 L44 14.5 L4 17.0 Z"
+//           fill={`url(#gum-${id})`}
+//         />
+
+//         {/* lower gum */}
+//         <path
+//           // d="M4 21.5 L44 23 L44 29 Q44 32 41 31.8 L7 27.8 Q4 27.5 4 25 Z"
+//           // d="M4 22.3 L44 23.8 L44 29 Q44 32 41 31.8 L7 27.8 Q4 27.5 4 25 Z"
+//           d="M4 23.0 L44 24.5 L44 29 Q44 32 41 31.8 L7 27.8 Q4 27.5 4 25 Z"
+//           fill={`url(#gum-${id})`}
+//         />
+//       </g>
+//     </svg>
+//   );
+// };
+
+
+// tooth outline in its own box (width w, height h): the gum side is at y = 0,
+// the chewing edge at y = h
+const toothPath = (type, w, h) => {
+  if (type === "incisor") {
+    return `M0.6 0 H${w - 0.6} L${w} ${h - 1.2} Q${w} ${h} ${w - 1} ${h} H1 Q0 ${h} 0 ${h - 1.2} Z`;
+  }
+  if (type === "canine") {
+    return `M0.6 0 H${w - 0.6} L${w} ${h * 0.6} Q${w} ${h * 0.75} ${w / 2} ${h} Q0 ${h * 0.75} 0 ${h * 0.6} Z`;
+  }
+  if (type === "premolar") {
+    return `M0.6 0 H${w - 0.6} L${w} ${h - 1.2} Q${w} ${h} ${w - 1.2} ${h} Q${w * 0.62} ${h - 0.4} ${w / 2} ${h - 1.3} Q${w * 0.38} ${h - 0.4} 1.2 ${h} Q0 ${h} 0 ${h - 1.2} Z`;
+  }
+  // molar: two bumps with a dip in the middle
+  return `M0.5 0 H${w - 0.5} L${w} ${h - 1.2} Q${w} ${h} ${w - 1.4} ${h} Q${w * 0.68} ${h - 1.4} ${w / 2} ${h - 0.7} Q${w * 0.32} ${h - 1.4} 1.4 ${h} Q0 ${h} 0 ${h - 1.2} Z`;
+};
+
+// const SideBite = ({ id, flip }) => {
+//   // from the back of the mouth (left) to the front (right)
+//   const TEETH = [
+//     { type: "molar", w: 6 },
+//     { type: "molar", w: 6 },
+//     { type: "premolar", w: 4.8 },
+//     { type: "premolar", w: 4.8 },
+//     { type: "canine", w: 4.4 },
+//     { type: "incisor", w: 4 },
+//     { type: "incisor", w: 4 },
+//   ];
+//   const GAP = 0.4;
+//   const X0 = 6;          // where the first tooth starts
+//   const BITE_GAP = 1.2;  // gap between the upper and lower teeth
+
+//   // top and bottom edge of the tooth strip (the gap between the two gums)
+//   const topEdge = (x) => 17.0 - ((x - 4) / 40) * 2.5;
+//   const botEdge = (x) => 23.0 + ((x - 4) / 40) * 1.5;
+
+//   let x = X0;
+//   const placed = TEETH.map((t) => {
+//     const item = { ...t, x };
+//     x += t.w + GAP;
+//     return item;
+//   });
+
+//   return (
+//     <svg {...jawProps}>
+//       <Defs id={id} />
+//       <g transform={flip ? "translate(48 0) scale(-1 1)" : undefined}>
+//         {placed.map((t, i) => {
+//           const top = topEdge(t.x + t.w / 2) - 0.5;
+//           const bottom = botEdge(t.x + t.w / 2) + 0.5;
+//           const mid = (top + bottom) / 2;
+//           const upperH = mid - BITE_GAP / 2 - top;
+//           const lowerH = bottom - (mid + BITE_GAP / 2);
+//           const style = {
+//             fill: `url(#tooth-${id})`,
+//             stroke: EDGE,
+//             strokeWidth: 0.4,
+//           };
+
+//           return (
+//             <g key={i}>
+//               {/* upper tooth */}
+//               <path transform={`translate(${t.x} ${top})`} d={toothPath(t.type, t.w, upperH)} {...style} />
+//               {/* lower tooth: the same shape turned upside down */}
+//               <path
+//                 transform={`translate(${t.x} ${bottom}) scale(1 -1)`}
+//                 d={toothPath(t.type, t.w, lowerH)}
+//                 {...style}
+//               />
+//             </g>
+//           );
+//         })}
+
+//         {/* upper gum */}
+//         <path
+//           d="M4 15 Q4 12.5 7 12.2 L41 8.2 Q44 8 44 11 L44 14.5 L4 17.0 Z"
+//           fill={`url(#gum-${id})`}
+//         />
+
+//         {/* lower gum */}
+//         <path
+//           d="M4 23.0 L44 24.5 L44 29 Q44 32 41 31.8 L7 27.8 Q4 27.5 4 25 Z"
+//           fill={`url(#gum-${id})`}
+//         />
+//       </g>
+//     </svg>
+//   );
+// };
+
+
+const SideBite = ({ id, flip }) => {
+  // from the back of the mouth (left) to the front (right)
+  const TEETH = [
+    { w: 6, rx: 1.8, ext: 0 },     // molar
+    { w: 6, rx: 1.8, ext: 0 },     // molar
+    { w: 4.8, rx: 1.5, ext: 0 },   // premolar
+    { w: 4.8, rx: 1.5, ext: 0 },   // premolar
+    { w: 4.4, rx: 2.2, ext: 0.7 }, // canine (a little taller, rounder)
+    { w: 4, rx: 1, ext: 0 },       // incisor
+    { w: 4, rx: 1, ext: 0 },       // incisor
+  ];
+  const GAP = 0.4;
+  const X0 = 6;          // where the first tooth starts
+  const BITE_GAP = 1.2;  // the centre gap, the same for every tooth
+
+  // top and bottom edge of the tooth strip
+  const topEdge = (x) => 17.0 - ((x - 4) / 40) * 2.5;
+  const botEdge = (x) => 23.0 + ((x - 4) / 40) * 1.5;
+  const midEdge = (x) => (topEdge(x) + botEdge(x)) / 2; // the centre line
+
+  let x = X0;
+  const placed = TEETH.map((t) => {
+    const item = { ...t, x };
+    x += t.w + GAP;
+    return item;
+  });
+
+  return (
+    <svg {...jawProps}>
+      <Defs id={id} />
+      <defs>
+        {/* one straight cut through all the teeth = one equal gap */}
+        <mask id={`bite-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="40">
+          <rect x="0" y="0" width="48" height="40" fill="white" />
+          <line x1="0" y1={midEdge(0)} x2="48" y2={midEdge(48)} stroke="black" strokeWidth={BITE_GAP} />
+        </mask>
+      </defs>
+
+      <g transform={flip ? "translate(48 0) scale(-1 1)" : undefined}>
+        <g mask={`url(#bite-${id})`}>
+          {placed.map((t, i) => {
+            const cx = t.x + t.w / 2;
+            const top = topEdge(cx) - 0.5 - t.ext;
+            const bottom = botEdge(cx) + 0.5 + t.ext;
+            return (
+              <rect
+                key={i}
+                x={t.x}
+                y={top}
+                width={t.w}
+                height={bottom - top}
+                rx={t.rx}
+                fill={`url(#tooth-${id})`}
+                stroke={EDGE}
+                strokeWidth={0.4}
+              />
+            );
+          })}
+        </g>
+
+        {/* upper gum */}
+        <path
+          d="M4 15 Q4 12.5 7 12.2 L41 8.2 Q44 8 44 11 L44 14.5 L4 17.0 Z"
+          fill={`url(#gum-${id})`}
+        />
+
+        {/* lower gum */}
+        <path
+          d="M4 23.0 L44 24.5 L44 29 Q44 32 41 31.8 L7 27.8 Q4 27.5 4 25 Z"
+          fill={`url(#gum-${id})`}
+        />
+      </g>
+    </svg>
+  );
+};
+
+
+
+const LeftIcon = () => <SideBite id="left" />;
+const RightIcon = () => <SideBite id="right" flip />;
+
+// ---------- Top / Bottom ----------
+const ArchJaw = ({ id, lower }) => {
+  const CX = 24, CY = 22, RX = 15, RY = 17, COUNT = 14;
+  const outline = `M${CX - RX} ${CY + 0} V${CY} A${RX} ${RY} 0 0 1 ${CX + RX} ${CY} V${CY + 0}`;
+  // gum band, moved inward so less gum sticks out on the outer side
+const GR = 1.5;
+const gumOutline = `M${CX - RX + GR} ${CY + 0} V${CY} A${RX - GR} ${RY - GR} 0 0 1 ${CX + RX - GR} ${CY} V${CY + 0}`;
+
+  return (
+    <svg {...jawProps}>
+      <Defs id={id} />
+      <g transform={lower ? "translate(0 40) scale(1 -1)" : undefined}>
+        {/* {!lower && <path d={`${outline} Z`} fill="#f8a29d" />} */}
+        <path d={outline} fill="none" stroke={`url(#gum-${id})`} strokeWidth={6} />
+        {Array.from({ length: COUNT }, (_, i) => {
+          const t = ((i + 0.5) * Math.PI) / COUNT;
+          const x = CX - RX * Math.cos(t);
+          const y = CY - RY * Math.sin(t);
+          const angle = (Math.atan2(-RY * Math.cos(t), RX * Math.sin(t)) * 180) / Math.PI;
+          return (
+            <rect
+              key={i}
+              x={-1.9}
+              y={-2.4}
+              width={3.8}
+              height={3.8}
+              rx={1.4}
+              fill={`url(#tooth-${id})`}
+              stroke={EDGE}
+              strokeWidth={0.5}
+              transform={`translate(${x} ${y}) rotate(${angle})`}
+            />
+          );
+        })}
+      </g>
+    </svg>
+  );
+};
+const TopIcon = () => <ArchJaw id="top" />;
+const BottomIcon = () => <ArchJaw id="bottom" lower />;
+
+
 
 const VIEW_ICONS = {
   "Front View": <FrontIcon />,
   "Back View": <BackIcon />,
-  "Top View": <TopIcon />,
-  "Bottom View": <BottomIcon />,
-  "Left View": <LeftIcon />,
-  "Right View": <RightIcon />,
+  "Top View": (
+  <span style={{ display: "flex", transform: "translateY(-5px)" }}>
+    <BottomIcon />
+  </span>
+),
+"Bottom View": (
+  <span style={{ display: "flex", transform: "translateY(5px)" }}>
+    <TopIcon />
+  </span>
+),
+
+  "Left View": <RightIcon />,     // swapped
+  "Right View": <LeftIcon />,     // swapped
 };
 
   
@@ -1154,7 +1918,7 @@ const styles = {
 
   thirdBar: {
   minHeight: 70,
-  background: "#f2f2f2",
+  background: "#6b6b6b",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
