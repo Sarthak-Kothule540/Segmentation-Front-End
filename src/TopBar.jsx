@@ -1698,14 +1698,20 @@ export default function TopBar({
               {/* <button style={styles.browseButton} onClick={() => upperInputRef.current.click()}>
                 Browse
               </button> */}
+
               <button
-            style={styles.browseButton}
-            onClick={() => upperInputRef.current.click()}
-           onMouseEnter={hoverOn}
-           onMouseLeave={hoverOff}
-           >
-         Browse
-         </button>
+         data-active={!!upperName}
+          style={{
+          ...styles.browseButton,
+            background: upperName ? ACTIVE_COLOR : "transparent",
+        }}
+         onClick={() => upperInputRef.current.click()}
+       onMouseEnter={hoverOn}
+       onMouseLeave={hoverOff}
+         >
+          Browse
+       </button>
+              
             
 
               <span style={styles.label}>
@@ -1726,14 +1732,18 @@ export default function TopBar({
                 Browse
               </button> */}
 
-              <button
-            style={styles.browseButton}
-           onClick={() => lowerInputRef.current.click()}
-           onMouseEnter={hoverOn}
-           onMouseLeave={hoverOff}
-           >
-          Browse
-          </button>
+            <button
+         data-active={!!lowerName}
+          style={{
+      ...styles.browseButton,
+      background: lowerName ? ACTIVE_COLOR : "transparent",
+      }}
+      onClick={() => lowerInputRef.current.click()}
+      onMouseEnter={hoverOn}
+        onMouseLeave={hoverOff}
+        >
+    Browse
+   </button>
 
               <span style={styles.label}>
                 Upload Lower Scan <span style={styles.required}>*</span>
@@ -1875,7 +1885,7 @@ export default function TopBar({
 </button>
 
 
-    <button
+    {/* <button
       style={{
         ...styles.toolButton,
         // background: view === "automaticSetup" ? "#4f8cff" : "#5a5a5a",
@@ -1886,7 +1896,22 @@ export default function TopBar({
       onClick={onFinalPosition}
     >
       Final Position
-    </button>
+    </button> */}
+
+    <button
+  data-active={view === "automaticSetup"}
+  style={{
+    ...styles.toolButton,
+    background: view === "automaticSetup" ? ACTIVE_COLOR : "transparent",
+    opacity: busy ? 0.5 : 1,
+  }}
+  disabled={busy}
+  onClick={onFinalPosition}
+  onMouseEnter={hoverOn}
+  onMouseLeave={hoverOff}
+>
+  Final Position
+</button>
   </div>
 )}
 
@@ -2126,7 +2151,7 @@ viewButton: {
   border: "none",
   borderRadius: 6,
   cursor: "pointer",
-  minWidth: 64,
+  minWidth: 60,
 },
 viewLabel: {
   fontSize: 12,
