@@ -2758,14 +2758,23 @@ const confirmFileDialog = () => {
         />
       </div>
 
-      <div style={styles.dialogButtons}>
+      {/* <div style={styles.dialogButtons}>
         <button style={styles.cancelButton} onClick={cancelFileDialog}>
           Cancel
         </button>
         <button style={styles.okButton} onClick={confirmFileDialog}>
           OK
         </button>
-      </div>
+      </div> */}
+
+          <div style={styles.dialogButtons}>
+         <button style={styles.okButton} onClick={confirmFileDialog}>
+         OK
+        </button>
+      <button style={styles.cancelButton} onClick={cancelFileDialog}>
+      Cancel
+     </button>
+   </div>
     </div>
   </div>
 )}
@@ -2798,7 +2807,7 @@ const styles = {
   },
   secondBar: {
     position: "relative", // needed to center the progress bar inside this bar
-    height: 70, // fixed height, the File page is gone so it can be short
+    height: 44, // fixed height, the File page is gone so it can be short
     background: "#3b3b3b",
     padding: "0 16px",
     display: "flex",
@@ -2852,7 +2861,7 @@ const styles = {
     gap: 1,
   },
   toolButton: {
-    height: 54, // must be lower than the height of secondBar
+    height: 34, // must be lower than the height of secondBar
     minWidth: 64,
     padding: "0 10px",
     background: "transparent",
