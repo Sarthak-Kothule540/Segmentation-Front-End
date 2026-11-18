@@ -77,7 +77,7 @@ const styles = {
     position: "relative",
     width: "15%",   // half of the screen width
     minWidth: 400,
-    height: 40,
+    height: 35,
     background: "#2a2a2a",
     border: "1px solid #666",
     borderRadius: 22,

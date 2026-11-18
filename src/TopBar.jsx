@@ -2187,6 +2187,17 @@ const hoverOff = (e) => {
     e.currentTarget.dataset.active === "true" ? ACTIVE_COLOR : "transparent";
 };
 
+const DONE_COLOR = "#000000"; // second bar: the clicked button
+
+// hover for the second bar buttons: grey only when the button has no color of its own
+const toolHoverOn = (e) => {
+  if (e.currentTarget.dataset.bg === "transparent") e.currentTarget.style.background = HOVER_COLOR;
+};
+const toolHoverOff = (e) => {
+  e.currentTarget.style.background = e.currentTarget.dataset.bg;
+};
+
+
 // which view each Clean Model tool shows
 const TOOL_VIEW = {
   "Clean Model": "cleanModel",
@@ -2508,6 +2519,13 @@ export default function TopBar({
   const [pendingUpper, setPendingUpper] = useState(null); // picked in the window, not loaded yet
 const [pendingLower, setPendingLower] = useState(null);
   const [activeView, setActiveView] = useState(null); // the view button shown in blue
+  const [clickedTool, setClickedTool] = useState(null); // the second bar button clicked last
+
+// black for the clicked button, nothing for the others
+const toolColor = (key) => (clickedTool === key ? DONE_COLOR : "transparent");
+
+// the other buttons look disabled while an exe runs
+const toolOpacity = (key) => (busy && clickedTool !== key ? 0.5 : 1);
   const upperInputRef = useRef(null);
   const lowerInputRef = useRef(null);
 
@@ -2577,7 +2595,7 @@ const confirmFileDialog = () => {
 
       {/* ---------- Second top bar (dark grey) ---------- */}
       <div style={styles.secondBar}>
-        {activeTab === "Clean Model" && (
+        {/* {activeTab === "Clean Model" && (
           <div style={styles.toolRow}>
             {CLEAN_MODEL_TOOLS.map((tool) => {
               const isActive = view === TOOL_VIEW[tool];
@@ -2663,7 +2681,110 @@ const confirmFileDialog = () => {
               Final Position
             </button>
           </div>
-        )}
+        )} */}
+
+        {activeTab === "Clean Model" && (
+  <div style={styles.toolRow}>
+    {CLEAN_MODEL_TOOLS.map((tool) => {
+      const bg = toolColor(tool);
+      return (
+        <button
+          key={tool}
+          data-bg={bg}
+          style={{ ...styles.toolButton, background: bg, opacity: toolOpacity(tool) }}
+          onClick={() => {
+            setClickedTool(tool);
+            onToolClick && onToolClick(tool);
+          }}
+          onMouseEnter={toolHoverOn}
+          onMouseLeave={toolHoverOff}
+        >
+          {tool}
+        </button>
+      );
+    })}
+  </div>
+)}
+
+{activeTab === "Segment" && (
+  <div style={styles.toolRow}>
+    <button
+      data-bg={toolColor("identifyLat")}
+      style={{
+        ...styles.toolButton,
+        background: toolColor("identifyLat"),
+        opacity: toolOpacity("identifyLat"),
+      }}
+      disabled={busy}
+      onClick={() => {
+        setClickedTool("identifyLat");
+        onIdentifyLat();
+      }}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      Identify LAT
+    </button>
+
+    <button
+      data-bg={toolColor("segment")}
+      style={{
+        ...styles.toolButton,
+        background: toolColor("segment"),
+        opacity: toolOpacity("segment"),
+      }}
+      disabled={busy}
+      onClick={() => {
+        setClickedTool("segment");
+        onSegment();
+      }}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      Segment
+    </button>
+  </div>
+)}
+
+{activeTab === "Automatic Setup" && setupReady && (
+  <div style={styles.toolRow}>
+    <button
+      data-bg={toolColor("initial")}
+      style={{
+        ...styles.toolButton,
+        background: toolColor("initial"),
+        opacity: toolOpacity("initial"),
+      }}
+      disabled={busy}
+      onClick={() => {
+        setClickedTool("initial");
+        onInitialPosition();
+      }}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      Initial Position
+    </button>
+
+    <button
+      data-bg={toolColor("final")}
+      style={{
+        ...styles.toolButton,
+        background: toolColor("final"),
+        opacity: toolOpacity("final"),
+      }}
+      disabled={busy}
+      onClick={() => {
+        setClickedTool("final");
+        onFinalPosition();
+      }}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      Final Position
+    </button>
+  </div>
+)}
 
         {/* progress bar: centered inside the second bar */}
         {progress && (
