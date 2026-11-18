@@ -1684,6 +1684,64 @@ const [view, setView] = useState("scan");
 
 
 
+// const handleAutomaticSetup = async () => {
+//   if (busy) return;
+
+//   // already done: only show the stored result, the exe is not called again
+//   if (doneSteps.automaticSetup) {
+//     setView("automaticSetup");
+//     setMessage("");
+//     return;
+//   }
+//   if (!doneSteps.segment) {
+//     alert("Please do Segment first.");
+//     return;
+//   }
+
+//   setBusy(true);
+//   setMessage("");
+//   setProgress({ percent: 0, label: "Starting..." });
+
+//   try {
+//     const res = await fetch(`${BACKEND_URL}/api/automatic-setup`, { method: "POST" });
+//     const started = await res.json();
+//     if (!res.ok) throw new Error(started.message);
+
+//     const job = await waitForJob(`${BACKEND_URL}/api/automatic-setup/status`);
+//     console.log("Automatic Setup output files:", job.files);
+
+//     // download the STL files that the exe made, for each jaw
+//     const stamp = Date.now();
+//     const parts = { upper: [], lower: [] };
+//     for (const rel of (job.files || []).filter((f) => f.toLowerCase().endsWith(".stl"))) {
+//       const jaw = rel.split("/")[0]; // "upper" or "lower"
+//       if (jaw !== "upper" && jaw !== "lower") continue;
+//       const geo = await loadStlFile(`${BACKEND_URL}/files/AutomaticSetupOutput/${rel}?t=${stamp}`);
+//       parts[jaw].push({ name: rel.split("/").pop(), geo });
+//     }
+
+//     markDone("automaticSetup");
+
+//     if (parts.upper.length + parts.lower.length === 0) {
+//       setMessage(`Automatic Setup completed, but it made no STL files to show. Output: ${job.outputDir}`);
+//     } else {
+//       setSetupParts({
+//         upper: parts.upper.length ? parts.upper : null,
+//         lower: parts.lower.length ? parts.lower : null,
+//       });
+//       setView("automaticSetup");
+//     }
+
+//     setTimeout(() => setProgress(null), 2000);
+//   } catch (err) {
+//     setProgress(null);
+//     setMessage(err.message);
+//   } finally {
+//     setBusy(false);
+//   }
+// };
+
+
 const handleAutomaticSetup = async () => {
   if (busy) return;
 
@@ -1710,26 +1768,33 @@ const handleAutomaticSetup = async () => {
     const job = await waitForJob(`${BACKEND_URL}/api/automatic-setup/status`);
     console.log("Automatic Setup output files:", job.files);
 
-    // download the STL files that the exe made, for each jaw
+    // download the tooth STL files that the exe made, for each jaw
     const stamp = Date.now();
     const parts = { upper: [], lower: [] };
     for (const rel of (job.files || []).filter((f) => f.toLowerCase().endsWith(".stl"))) {
-      const jaw = rel.split("/")[0]; // "upper" or "lower"
-      if (jaw !== "upper" && jaw !== "lower") continue;
+      const fileName = rel.split("/").pop();
+
+      // only tooth files like 11_final.stl (this skips all_final.stl)
+      const m = fileName.match(/^(\d)(\d)_final\.stl$/i);
+      if (!m) continue;
+
+      // 1x, 2x = upper jaw; 3x, 4x = lower jaw
+      const jaw = m[1] === "1" || m[1] === "2" ? "upper" : "lower";
+
       const geo = await loadStlFile(`${BACKEND_URL}/files/AutomaticSetupOutput/${rel}?t=${stamp}`);
-      parts[jaw].push({ name: rel.split("/").pop(), geo });
+      // name it 11.stl again, like the Segment teeth, so the gum deformation can match each tooth
+      parts[jaw].push({ name: `${m[1]}${m[2]}.stl`, geo });
     }
 
-    markDone("automaticSetup");
-
-    if (parts.upper.length + parts.lower.length === 0) {
-      setMessage(`Automatic Setup completed, but it made no STL files to show. Output: ${job.outputDir}`);
-    } else {
+    if (parts.upper.length + parts.lower.length > 0) {
       setSetupParts({
         upper: parts.upper.length ? parts.upper : null,
         lower: parts.lower.length ? parts.lower : null,
       });
+      markDone("automaticSetup");
       setView("automaticSetup");
+    } else {
+      console.warn("Automatic Setup made no STL files to show:", job.files);
     }
 
     setTimeout(() => setProgress(null), 2000);
@@ -1740,7 +1805,6 @@ const handleAutomaticSetup = async () => {
     setBusy(false);
   }
 };
-
 
 
 // Initial Position: the Segment result (no exe is called)
