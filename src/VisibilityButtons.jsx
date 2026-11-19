@@ -211,7 +211,7 @@ export default function VisibilityButtons({
 const styles = {
   panel: {
     position: "absolute",
-    top: 50,
+    top: 200,
     right: 16,
     display: "flex",
     flexDirection: "column", // buttons are stacked
