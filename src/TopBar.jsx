@@ -2171,7 +2171,7 @@
 import { useRef, useState } from "react";
 import ProgressBar from "./ProgressBar.jsx";
 
-const TABS = ["File", "Clean Model", "Segment", "Automatic Setup"];
+const TABS = ["File", "Clean Model", "Segment", "Setup"];
 const CLEAN_MODEL_TOOLS = ["Clean Model", "Generate Trimline", "Trim Model", "Add Base"];
 const VIEWS = ["Front View", "Back View", "Top View", "Bottom View", "Left View", "Right View"];
 
@@ -2582,7 +2582,7 @@ const confirmFileDialog = () => {
                   return;
                 }
                 setActiveTab(tab);
-                if (tab === "Automatic Setup" && onAutomaticSetup) onAutomaticSetup();
+                if (tab === "Setup" && onAutomaticSetup) onAutomaticSetup();
               }}
               style={{
                 ...styles.tabButton,
@@ -2751,7 +2751,7 @@ const confirmFileDialog = () => {
   </div>
 )}
 
-{activeTab === "Automatic Setup" && setupReady && (
+{activeTab === "Setup" && setupReady && (
   <div style={styles.toolRow}>
     <button
       data-bg={toolColor("initial")}
