@@ -2176,6 +2176,7 @@ const CLEAN_MODEL_TOOLS = ["Clean Model", "Generate Trimline", "Trim Model", "Ad
 const VIEWS = ["Front View", "Back View", "Top View", "Bottom View", "Left View", "Right View"];
 
 const ACTIVE_COLOR = "#4f8cff";
+const VIEW_ACTIVE_COLOR = "#6b6b6b";
 const HOVER_COLOR = "#505050";
 
 // hover shows a grey box, but never replaces the blue of the active button
@@ -2512,6 +2513,10 @@ export default function TopBar({
   busy,
   progress,
   message,
+    showGrid,
+  onToggleGrid,
+  gridSize,
+  onGridSizeChange,
 }) {
   // the second bar shows the tools of this tab (File has no page there, it opens a dialog)
   const [activeTab, setActiveTab] = useState("Clean Model");
@@ -2783,6 +2788,36 @@ const confirmFileDialog = () => {
     >
       Final Position
     </button>
+
+
+
+    <button
+  data-bg={showGrid ? DONE_COLOR : "transparent"}
+  style={{
+    ...styles.toolButton,
+    background: showGrid ? DONE_COLOR : "transparent",
+  }}
+  onClick={onToggleGrid}
+  onMouseEnter={toolHoverOn}
+  onMouseLeave={toolHoverOff}
+>
+  Grid
+</button>
+{showGrid && (
+
+<select
+  value={gridSize}
+  onChange={(e) => onGridSizeChange(Number(e.target.value))}
+  style={styles.gridSelect}
+>
+  <option value={1}>1 mm</option>
+  <option value={2}>2 mm</option>
+  <option value={5}>5 mm</option>
+</select>
+
+)}
+
+
   </div>
 )}
 
@@ -2796,7 +2831,7 @@ const confirmFileDialog = () => {
 
       {/* ---------- Third bar (the six views) ---------- */}
       <div style={styles.thirdBar}>
-        {VIEWS.map((v) => {
+        {/* {VIEWS.map((v) => {
           const isActive = activeView === v;
           return (
             <button
@@ -2804,7 +2839,8 @@ const confirmFileDialog = () => {
               data-active={isActive}
               style={{
                 ...styles.viewButton,
-                background: isActive ? ACTIVE_COLOR : "transparent",
+                // background: isActive ? ACTIVE_COLOR : "transparent",
+                background: isActive ? VIEW_ACTIVE_COLOR : "transparent",
                 color: "#ffffff",
               }}
               onClick={() => {
@@ -2818,7 +2854,32 @@ const confirmFileDialog = () => {
               <span style={styles.viewLabel}>{v}</span>
             </button>
           );
-        })}
+        })} */}
+
+       {VIEWS.map((v) => {
+  const bg = activeView === v ? VIEW_ACTIVE_COLOR : "transparent";
+  return (
+    <button
+      key={v}
+      data-bg={bg}
+      style={{
+        ...styles.viewButton,
+        background: bg,
+        color: "#ffffff",
+      }}
+      onClick={() => {
+        setActiveView(v);
+        onViewChange && onViewChange(v);
+      }}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      {VIEW_ICONS[v]}
+      <span style={styles.viewLabel}>{v}</span>
+    </button>
+  );
+})}
+
       </div>
 
       {/* ---------- Upload window (opened by the File button) ---------- */}
@@ -3078,6 +3139,18 @@ okButton: {
   cursor: "pointer",
   fontSize: 14,
 },
+  gridSelect: {
+    height: 28,
+    marginLeft: 6,
+    padding: "0 6px",
+    background: "#5a5a5a",
+    color: "white",
+    border: "none",
+    borderRadius: 4,
+    fontSize: 14,
+    cursor: "pointer",
+  },
+
 };
 
 

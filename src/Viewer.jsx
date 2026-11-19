@@ -819,7 +819,7 @@
 
 
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useThree, useFrame} from "@react-three/fiber";
 // import { TrackballControls } from "@react-three/drei";
@@ -1545,7 +1545,145 @@ function Headlight() {
 }
 
 
+// ---------------- Grid: a measuring backdrop behind the model ----------------
+// const GRID_COLOR = "#5a5a5a"; // normal lines
+// const GRID_CENTER_COLOR = "#9a9a9a"; // the two middle lines
 
+// // the grid lies in the plane that faces the last view button (Front is the start view)
+// const GRID_PLANE = {
+//   "Front View": "xz",
+//   "Back View": "xz",
+//   "Top View": "xy",
+//   "Bottom View": "xy",
+//   "Left View": "yz",
+//   "Right View": "yz",
+// };
+
+// function MeasureGrid({ targetRef, spacing, plane, fitKey }) {
+//   const [area, setArea] = useState(null); // { center, extent } of the model
+
+//   useEffect(() => {
+//     const group = targetRef.current;
+//     if (!group) return;
+//     const box = new THREE.Box3().setFromObject(group);
+//     if (box.isEmpty()) return;
+//     const s = box.getSize(new THREE.Vector3());
+//     setArea({ center: box.getCenter(new THREE.Vector3()), extent: Math.max(s.x, s.y, s.z) });
+//   }, [targetRef, fitKey]);
+
+//   const grid = useMemo(() => {
+//     if (!area) return null;
+//     // an even number of divisions (max 400), so there is a line in the middle
+//     const divisions = Math.min(400, Math.ceil((area.extent * 1.6) / spacing / 2) * 2);
+//     const helper = new THREE.GridHelper(divisions * spacing, divisions, GRID_CENTER_COLOR, GRID_COLOR);
+//     helper.material.depthTest = false; // drawn first, the model covers it
+//     helper.material.depthWrite = false;
+//     helper.raycast = () => null; // the grid never blocks the mouse
+//     helper.renderOrder = -1;
+//     return helper;
+//   }, [area, spacing]);
+
+//   if (!grid) return null;
+
+//   // lines sit on whole millimeters, the plane goes through the middle of the model
+//   const snap = (v) => Math.round(v / spacing) * spacing;
+//   const c = area.center;
+//   let position = [snap(c.x), c.y, snap(c.z)]; // front / back: plane X-Z
+//   let rotation = [0, 0, 0];
+//   if (plane === "xy") {
+//     position = [snap(c.x), snap(c.y), c.z]; // top / bottom: plane X-Y
+//     rotation = [Math.PI / 2, 0, 0];
+//   } else if (plane === "yz") {
+//     position = [c.x, snap(c.y), snap(c.z)]; // left / right: plane Y-Z
+//     rotation = [0, 0, Math.PI / 2];
+//   }
+
+//   return <primitive object={grid} position={position} rotation={rotation} />;
+// }
+
+const MAJOR_EVERY = 5; // a strong line after every 5 small squares
+
+// ---------------- Grid: sets the size of the grid layer so that it matches mm ----------------
+// function GridScaler({ gridRef, spacing, active }) {
+//   const { camera, controls, size, gl } = useThree();
+//   const last = useRef("");
+
+//   useFrame(() => {
+//     const el = gridRef.current;
+//     if (!el || !active) return;
+
+//     // the middle of the model (where the camera looks at)
+//     const target = controls ? controls.target : new THREE.Vector3();
+
+//     // how many screen pixels are 1 mm at the depth of the model
+//     const distance = camera.position.distanceTo(target);
+//     const pxPerMm = size.height / (2 * distance * Math.tan((camera.fov * Math.PI) / 360));
+//     const cell = pxPerMm * spacing;
+
+//     // where the middle of the model is on the screen, measured from the corner of the grid layer
+//     const p = target.clone().project(camera);
+//     const canvasRect = gl.domElement.getBoundingClientRect();
+//     const layerRect = el.getBoundingClientRect();
+//     const x = canvasRect.left - layerRect.left + (p.x * 0.5 + 0.5) * size.width;
+//     const y = canvasRect.top - layerRect.top + (-p.y * 0.5 + 0.5) * size.height;
+
+//     // only touch the page when something changed
+//     const key = `${cell.toFixed(2)}|${x.toFixed(1)}|${y.toFixed(1)}`;
+//     if (key === last.current) return;
+//     last.current = key;
+
+//     // zoomed out so far that the lines would blur together: hide them
+//     if (cell < 3) {
+//       el.style.backgroundSize = "0 0";
+//       return;
+//     }
+//     el.style.backgroundSize = `${cell}px ${cell}px`;
+//     el.style.backgroundPosition = `${x}px ${y}px`;
+//   });
+
+//   return null;
+// }
+
+
+function GridScaler({ gridRef, spacing, active }) {
+  const { camera, controls, size, gl } = useThree();
+  const last = useRef("");
+
+  useFrame(() => {
+    const el = gridRef.current;
+    if (!el || !active) return;
+
+    // the middle of the model (where the camera looks at)
+    const target = controls ? controls.target : new THREE.Vector3();
+
+    // how many screen pixels are 1 mm at the depth of the model
+    const distance = camera.position.distanceTo(target);
+    const pxPerMm = size.height / (2 * distance * Math.tan((camera.fov * Math.PI) / 360));
+    const cell = pxPerMm * spacing; // one small square
+    const major = cell * MAJOR_EVERY; // one big square
+
+    // where the middle of the model is on the screen, measured from the corner of the grid layer
+    const p = target.clone().project(camera);
+    const canvasRect = gl.domElement.getBoundingClientRect();
+    const layerRect = el.getBoundingClientRect();
+    const x = canvasRect.left - layerRect.left + (p.x * 0.5 + 0.5) * size.width;
+    const y = canvasRect.top - layerRect.top + (-p.y * 0.5 + 0.5) * size.height;
+
+    // only touch the page when something changed
+    const key = `${cell.toFixed(2)}|${x.toFixed(1)}|${y.toFixed(1)}`;
+    if (key === last.current) return;
+    last.current = key;
+
+    // zoomed out so far that lines would blur together: hide the small ones first, then the strong ones
+    const minorSize = cell >= 4 ? `${cell}px ${cell}px` : "0 0";
+    const majorSize = major >= 8 ? `${major}px ${major}px` : "0 0";
+
+    el.style.backgroundSize = `${majorSize}, ${majorSize}, ${minorSize}, ${minorSize}`;
+    el.style.backgroundPosition = `${x}px ${y}px`; // the same start for all four layers
+  });
+
+  return null;
+}
 
 
 
@@ -1569,6 +1707,10 @@ export default function Viewer({
   onStartTrimDrag,
   onMoveDrag,
   onEndDrag,
+  showGrid,
+  gridSize,
+    gridRef,
+
 }) {
   const modelRef = useRef();
 
@@ -1644,6 +1786,17 @@ export default function Viewer({
         </group>
       </group>
 
+
+      {/* {showGrid && (
+  <MeasureGrid
+    targetRef={modelRef}
+    spacing={gridSize}
+    plane={(viewRequest && GRID_PLANE[viewRequest.name]) || "xz"}
+    fitKey={fitKey}
+  />
+)} */}
+
+
       {/* the LAT splines, hidden together with their jaw */}
       <group visible={showUpper }>
         <LatCurves jaw="upper" curves={latCurves.upper} dragging={dragging} onStartDrag={onStartDrag} />
@@ -1655,6 +1808,7 @@ export default function Viewer({
       <FrontView targetRef={modelRef} fitKey={fitKey} />
       <ViewController targetRef={modelRef} viewRequest={viewRequest} />
       <DragController dragging={dragging} onEndDrag={onEndDrag} />
+      <GridScaler gridRef={gridRef} spacing={gridSize} active={showGrid} />
 
       <TrackballControls
         makeDefault

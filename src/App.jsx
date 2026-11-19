@@ -1107,6 +1107,20 @@ const ALL_VISIBLE = { upperTeeth: true, upperGum: true, lowerTeeth: true, lowerG
 const NO_RESULT = { upper: null, lower: null };
 
 const NO_LABELS = { upper: [], lower: [] };
+// the grid starts below the first bar (44) and the second bar (44); change this if those heights change
+const BARS_HEIGHT = 88;
+// const GRID_LINE_COLOR = "rgba(255, 255, 255, 0.28)";
+// const GRID_IMAGE = `linear-gradient(to right, ${GRID_LINE_COLOR} 1px, transparent 1px), linear-gradient(to bottom, ${GRID_LINE_COLOR} 1px, transparent 1px)`;
+const MINOR_LINE_COLOR = "rgba(255, 255, 255, 0.18)"; // the small squares
+const MAJOR_LINE_COLOR = "rgba(255, 90, 90, 0.6)"; // the strong line after every 5 squares
+
+// 4 layers: strong vertical, strong horizontal, small vertical, small horizontal
+const GRID_IMAGE = [
+  `linear-gradient(to right, ${MAJOR_LINE_COLOR} 1px, transparent 1px)`,
+  `linear-gradient(to bottom, ${MAJOR_LINE_COLOR} 1px, transparent 1px)`,
+  `linear-gradient(to right, ${MINOR_LINE_COLOR} 1px, transparent 1px)`,
+  `linear-gradient(to bottom, ${MINOR_LINE_COLOR} 1px, transparent 1px)`,
+].join(", ");
 // TESTING ONLY: true = Generate Trimline / Trim Model / Add Base work after a new upload
 // without running Clean Model or Identify LAT again (the old Output folder is kept)
 const KEEP_OUTPUT_ON_UPLOAD = false;
@@ -1255,6 +1269,11 @@ const [view, setView] = useState("scan");
     // tooth number labels after Segment: [{ id: "11", a: Vector3, b: Vector3 }, ...] for each jaw
   const [toothLabels, setToothLabels] = useState(NO_LABELS);
        const [showNumbers, setShowNumbers] = useState(true);
+       const [showGrid, setShowGrid] = useState(false);
+       const gridRef = useRef(null); // the grid layer, sized by the Viewer
+
+const [gridSize, setGridSize] = useState(1); // grid spacing in mm
+
 
        const [viewRequest, setViewRequest] = useState(null);
 
@@ -2048,7 +2067,26 @@ const viewResults =
   view === "trimModel" ? trimModelMeshes : view === "addBase" ? baseMeshes : NO_RESULT;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    // <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+
+     <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 0 }}>
+    {/* grid layer: behind everything, from below the second bar to the bottom of the screen */}
+    <div
+      ref={gridRef}
+      style={{
+        position: "absolute",
+        top: BARS_HEIGHT,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: -1,
+        pointerEvents: "none", // the mouse goes through to the model
+        display: showGrid ? "block" : "none",
+        backgroundImage: GRID_IMAGE,
+        // backgroundSize: "50px 50px", // the Viewer replaces this with the real size
+        backgroundSize: "250px 250px, 250px 250px, 50px 50px, 50px 50px", // the Viewer replaces this
+      }}
+    />
       <TopBar
         upperName={upper.name}
         lowerName={lower.name}
@@ -2063,6 +2101,10 @@ const viewResults =
         onAutomaticSetup={handleAutomaticSetup}
         onInitialPosition={handleInitialPosition}
         onFinalPosition={handleFinalPosition}
+        showGrid={showGrid}
+       onToggleGrid={() => setShowGrid((v) => !v)}
+       gridSize={gridSize}
+      onGridSizeChange={setGridSize}
         setupReady={doneSteps.automaticSetup}
         view={view}
         onViewChange={handleViewChange}
@@ -2098,6 +2140,9 @@ const viewResults =
           onEndDrag={endDrag}
           showNumbers={showNumbers}
           viewRequest={viewRequest}
+          showGrid={showGrid}
+          gridRef={gridRef}
+          gridSize={gridSize}
         />
 
         <VisibilityButtons
