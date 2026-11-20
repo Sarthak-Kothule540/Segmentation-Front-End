@@ -4452,14 +4452,14 @@ function OcclusionLegend() {
     <div
       style={{
         position: "absolute",
-        left: 24,
+        right: 204,
         top: "50%",
         transform: "translateY(-50%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         fontSize: 11,
-        color: "#444",
+        color: "#ffffff",
         pointerEvents: "none",
         userSelect: "none",
       }}
