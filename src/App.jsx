@@ -1111,7 +1111,7 @@ const NO_LABELS = { upper: [], lower: [] };
 const BARS_HEIGHT = 88;
 // const GRID_LINE_COLOR = "rgba(255, 255, 255, 0.28)";
 // const GRID_IMAGE = `linear-gradient(to right, ${GRID_LINE_COLOR} 1px, transparent 1px), linear-gradient(to bottom, ${GRID_LINE_COLOR} 1px, transparent 1px)`;
-const MINOR_LINE_COLOR = "rgba(255, 255, 255, 0.18)"; // the small squares
+const MINOR_LINE_COLOR = "rgba(255, 255, 255, 0.65)"; // the small squares
 const MAJOR_LINE_COLOR = "rgba(255, 90, 90, 0.6)"; // the strong line after every 5 squares
 
 // 4 layers: strong vertical, strong horizontal, small vertical, small horizontal

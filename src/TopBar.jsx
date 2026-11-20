@@ -3163,7 +3163,7 @@ okButton: {
 },
   gridSelect: {
     height: 28,
-    marginLeft: 6,
+    margin:"0 6px",
     padding: "0 6px",
     background: "#5a5a5a",
     color: "white",
