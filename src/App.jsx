@@ -1274,6 +1274,7 @@ const [view, setView] = useState("scan");
 
 const [gridSize, setGridSize] = useState(1); // grid spacing in mm
 
+const [showSuperimpose, setShowSuperimpose] = useState(false);
 
        const [viewRequest, setViewRequest] = useState(null);
 
@@ -1309,6 +1310,7 @@ const [gridSize, setGridSize] = useState(1); // grid spacing in mm
    setTrimModelMeshes((prev) => ({ ...prev, [type]: null }));
    setBaseMeshes((prev) => ({ ...prev, [type]: null }));
    setView("scan");
+   setShowSuperimpose(false);
 
     setMessage("");
     setDoneSteps(NOT_DONE);
@@ -2055,6 +2057,24 @@ const setupWithGum = (jaw) => {
   return [...gum, ...teeth];
 };
 const setupView = { upper: setupWithGum("upper"), lower: setupWithGum("lower") };
+// Superimpose: only on the Final Position view; the initial teeth (Segment result) are drawn as a green ghost
+const superimposeActive = showSuperimpose && view === "automaticSetup";
+
+const initialTeeth = (jaw) => (segParts[jaw] || []).filter((p) => !isGumPart(p) && !isWholePart(p));
+
+const ghostParts = superimposeActive
+  ? { upper: initialTeeth("upper"), lower: initialTeeth("lower") }
+  : NO_PARTS;
+
+const handleToggleSuperimpose = () => {
+  if (busy) return;
+  if (superimposeActive) {
+    setShowSuperimpose(false);
+  } else {
+    setShowSuperimpose(true);
+    setView("automaticSetup"); // Superimpose compares with the final position
+  }
+};
 
 const viewParts =
   view === "segment" ? segParts : view === "automaticSetup" ? setupView : NO_PARTS;
@@ -2105,6 +2125,8 @@ const viewResults =
        onToggleGrid={() => setShowGrid((v) => !v)}
        gridSize={gridSize}
       onGridSizeChange={setGridSize}
+      showSuperimpose={superimposeActive}
+onToggleSuperimpose={handleToggleSuperimpose}
         setupReady={doneSteps.automaticSetup}
         view={view}
         onViewChange={handleViewChange}
@@ -2143,6 +2165,8 @@ const viewResults =
           showGrid={showGrid}
           gridRef={gridRef}
           gridSize={gridSize}
+          ghostParts={ghostParts}
+
         />
 
         <VisibilityButtons

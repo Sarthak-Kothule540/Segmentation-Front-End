@@ -1685,6 +1685,33 @@ function GridScaler({ gridRef, spacing, active }) {
   return null;
 }
 
+// ---------------- Superimpose: the initial position of the teeth as a green ghost ----------------
+const GHOST_COLOR = "#5cc98f"; // color of the initial position
+const GHOST_OPACITY = 0.55; // 1 = solid, lower = more see-through
+
+function GhostTeeth({ parts, show }) {
+  if (!show || !parts || parts.length === 0) return null;
+
+  return (
+    <>
+      {parts.map((p) => (
+        <mesh key={p.name} geometry={p.geo} renderOrder={5} raycast={noRaycast}>
+          <meshStandardMaterial
+            color={GHOST_COLOR}
+            transparent
+            opacity={GHOST_OPACITY}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            // pulled a little towards the camera, so it wins where it lies on the final tooth
+            polygonOffset
+            polygonOffsetFactor={-1}
+            polygonOffsetUnits={-1}
+          />
+        </mesh>
+      ))}
+    </>
+  );
+}
 
 
 
@@ -1709,7 +1736,8 @@ export default function Viewer({
   onEndDrag,
   showGrid,
   gridSize,
-    gridRef,
+  gridRef,
+  ghostParts,
 
 }) {
   const modelRef = useRef();
@@ -1756,6 +1784,7 @@ export default function Viewer({
         show={showUpper && segVisible.upperTeeth && showNumbers}
 
          />
+         <GhostTeeth parts={ghostParts.upper} show={segVisible.upperTeeth} />
 
         </group>
         <group visible={showLower}>
@@ -1782,6 +1811,8 @@ export default function Viewer({
          parts={lowerParts}
         show={showLower && segVisible.lowerTeeth && showNumbers}
         />
+
+        <GhostTeeth parts={ghostParts.lower} show={segVisible.lowerTeeth} />
 
         </group>
       </group>

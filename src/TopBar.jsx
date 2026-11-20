@@ -2517,6 +2517,9 @@ export default function TopBar({
   onToggleGrid,
   gridSize,
   onGridSizeChange,
+    showSuperimpose,
+  onToggleSuperimpose,
+
 }) {
   // the second bar shows the tools of this tab (File has no page there, it opens a dialog)
   const [activeTab, setActiveTab] = useState("Clean Model");
@@ -2803,6 +2806,9 @@ const confirmFileDialog = () => {
 >
   Grid
 </button>
+
+
+
 {showGrid && (
 
 <select
@@ -2816,6 +2822,22 @@ const confirmFileDialog = () => {
 </select>
 
 )}
+
+
+
+<button
+  data-bg={showSuperimpose ? DONE_COLOR : "transparent"}
+  style={{
+    ...styles.toolButton,
+    background: showSuperimpose ? DONE_COLOR : "transparent",
+  }}
+  onClick={onToggleSuperimpose}
+  onMouseEnter={toolHoverOn}
+  onMouseLeave={toolHoverOff}
+>
+  Superimpose
+</button>
+
 
 
   </div>
