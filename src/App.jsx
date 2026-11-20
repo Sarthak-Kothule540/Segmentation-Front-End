@@ -13687,11 +13687,12 @@ function OcclusionLegend() {
         </div>
         <div style={{ width: 6, borderRadius: 2, background: occlusionGradientCss() }} />
       </div>
-      <div style={{ marginTop: 10, textAlign: "center", lineHeight: 1.3 }}>
+      {/* <div style={{ marginTop: 10, textAlign: "center", lineHeight: 1.3 }}>
         overlap
         <br />
         mm
-      </div>
+      </div> */}
+      <div style={{ marginTop: 7 }}>mm</div>
     </div>
   );
 }
