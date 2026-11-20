@@ -453,7 +453,10 @@ export default function MovementPanel({ movement, onClose }) {
       <div style={styles.subRow}>
         <span style={styles.subtitle}>Movement reference point</span>
         <span style={styles.refLink} title="Crown center (center of the tooth surface)">
-          ⌄ Reference points
+          {/* ⌄ Reference points */}
+          <span style={{ position: "relative", top: -3, marginRight: 4 }}>⌄</span>
+          Reference points
+
         </span>
       </div>
 
@@ -464,7 +467,11 @@ export default function MovementPanel({ movement, onClose }) {
               <th style={{ ...styles.th, width: 34 }} />
               {ICONS.map((_, i) => (
                 <th key={i} style={styles.th}>
-                  <HeaderIcon index={i} />
+                  {/* <HeaderIcon index={i} /> */}
+                  <div style={{ position: "relative", left: -20 }}>
+               <HeaderIcon index={i} />
+                </div>
+
                 </th>
               ))}
             </tr>
