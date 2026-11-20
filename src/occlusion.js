@@ -959,11 +959,11 @@ import * as THREE from "three";
 // checks the triangles near it.
 
 export const CONTACT_TOLERANCE_MM = 0.05; // a gap this small or smaller still counts as "touching"
-export const OCCLUSION_RANGE_MM = 0.8; // overlaps this deep or deeper are full red
+export const OCCLUSION_RANGE_MM = 1.2; // overlaps this deep or deeper are full red
 export const OCCLUSION_MAX_MM = 1.2; // how far we search (also finds overlaps up to this deep)
 
 // legend ticks shown on the right side bar (overlap depth, top = 0.80 mm, bottom = 0.00 mm)
-export const OCCLUSION_TICKS = [0.8, 0.6, 0.4, 0.2, 0.0];
+export const OCCLUSION_TICKS = [1.2,1.0,0.8, 0.6, 0.4, 0.2, 0.0];
 
 // hue goes from 270° (purple, 0 mm) through blue, cyan, green, yellow, orange to 0° (red, 0.80 mm)
 const HUE_AT_ZERO = 270;
