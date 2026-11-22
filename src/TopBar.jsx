@@ -8913,6 +8913,7 @@ export default function TopBar({
 }) {
   // the second bar shows the tools of this tab (File has no page there, it opens a dialog)
   const [activeTab, setActiveTab] = useState("Clean Model");
+  const [clickedTab, setClickedTab] = useState(null); // no tab is blue on load
   const [showFileDialog, setShowFileDialog] = useState(false);
   const [pendingUpper, setPendingUpper] = useState(null); // picked in the window, not loaded yet
 const [pendingLower, setPendingLower] = useState(null);
@@ -8964,7 +8965,8 @@ const confirmFileDialog = () => {
       {/* ---------- First top bar (dark black) ---------- */}
       <div style={styles.firstBar}>
         {TABS.map((tab) => {
-          const isActive = tab === "File" ? showFileDialog : activeTab === tab;
+          // const isActive = tab === "File" ? showFileDialog : activeTab === tab;
+          const isActive = tab === "File" ? showFileDialog : clickedTab === tab;
           return (
             <button
               key={tab}
@@ -8974,7 +8976,9 @@ const confirmFileDialog = () => {
                   openFileDialog(); // File only opens the upload window
                   return;
                 }
+                // setActiveTab(tab);
                 setActiveTab(tab);
+                setClickedTab(tab);
                 if (tab === "Setup" && onAutomaticSetup) onAutomaticSetup();
               }}
               style={{

@@ -12705,18 +12705,93 @@ const [showMovement, setShowMovement] = useState(false); // Movement table on/of
   };
 
   // asks the backend for the progress every second until the job is done
-  const waitForJob = async (statusUrl) => {
-    while (true) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+//   const waitForJob = async (statusUrl) => {
+//     while (true) {
+//       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const res = await fetch(statusUrl);
-      const job = await res.json();
+//       const res = await fetch(statusUrl);
+//       const job = await res.json();
 
-      if (job.error) throw new Error(job.error);
-      setProgress({ percent: job.percent, label: job.label });
-      if (job.done) return job;
-    }
-  };
+//       if (job.error) throw new Error(job.error);
+//       setProgress({ percent: job.percent, label: job.label });
+//       if (job.done) return job;
+//     }
+//   };
+
+
+
+  // asks the backend for the progress every second until the job is done.
+  // The backend only knows when a whole exe step finishes (0, 50, 100 ...),
+  // so the number on the bar climbs 1% at a time by itself while the exe works
+  // (never past 99), catches up 1% at a time when the backend is ahead,
+  // and only reaches 100% when the job is really done.
+  const waitForJob = (statusUrl) =>
+    new Promise((resolve, reject) => {
+      let shown = 0;          // number shown on the bar
+      let target = 0;         // real percent from the backend
+      let label = "Starting...";
+      let doneJob = null;     // set when the backend says done
+      let stopped = false;
+      let lastStep = Date.now();
+
+      // every 25 ms: decide whether to add 1%
+      const timer = setInterval(() => {
+        if (stopped) return;
+        const now = Date.now();
+        // slow climb while waiting: 0.5 s per 1% at the start, about 4.5 s per 1% near 99
+        const waitMs = 500 + shown * 40;
+        if (shown < target) {
+          shown++;               // backend is ahead (or done): catch up fast, 1% at a time
+          lastStep = now;
+        } else if (!doneJob && shown < 99 && now - lastStep >= waitMs) {
+          shown++;               // exe still working: creep up 1%
+          lastStep = now;
+        } else if (!doneJob) {
+          return;                // nothing changed
+        }
+        setProgress({ percent: shown, label });
+        if (doneJob && shown >= 100) {
+          stopped = true;
+          clearInterval(timer);
+          resolve(doneJob);
+        }
+      }, 25);
+
+      // ask the backend every second
+      (async () => {
+        while (!stopped) {
+          await new Promise((r) => setTimeout(r, 1000));
+          try {
+            const res = await fetch(statusUrl);
+            const job = await res.json();
+            if (job.error) throw new Error(job.error);
+            target = Math.max(target, job.percent || 0);
+            if (job.label) label = job.label;
+            // if (job.done) {
+            //   target = 100;
+            //   doneJob = job;
+            //   return;
+            // }
+
+             if (job.done) {
+              // job finished: show 100% at once and load the output right away
+              stopped = true;
+              clearInterval(timer);
+              setProgress({ percent: 100, label });
+              resolve(job);
+              return;
+            }
+
+
+          } catch (err) {
+            stopped = true;
+            clearInterval(timer);
+            reject(err);
+            return;
+          }
+        }
+      })();
+    });
 
   // ---------------- Identify LAT button ----------------
   const handleIdentifyLat = async () => {
@@ -13661,7 +13736,8 @@ function OcclusionLegend() {
         position: "absolute",
         right: 204,
         top: "50%",
-        transform: "translateY(-50%)",
+        // transform: "translateY(-50%)",
+        transform: "translateY(calc(-50% - 20px))",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
