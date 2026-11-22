@@ -507,7 +507,7 @@ const styles = {
   panel: {
     position: "absolute",
     left: 16,
-    top: 16,
+    top: 5,
     bottom: 16,
     width: 400,
     maxWidth: "calc(100% - 32px)",
