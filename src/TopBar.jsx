@@ -8908,8 +8908,14 @@ export default function TopBar({
   onToggleSuperimpose,
   showOcclusion,
   onToggleOcclusion,
+  // showMovement,
+  // onToggleMovement,
+  // onStaging,
+
   showMovement,
   onToggleMovement,
+  showRoot,
+  onToggleRoot,
   onStaging,
 
 
@@ -9261,6 +9267,20 @@ const confirmFileDialog = () => {
   onMouseLeave={toolHoverOff}
 >
   Movement
+</button>
+
+
+<button
+  data-bg={showRoot ? DONE_COLOR : "transparent"}
+  style={{
+    ...styles.toolButton,
+    background: showRoot ? DONE_COLOR : "transparent",
+  }}
+  onClick={onToggleRoot}
+  onMouseEnter={toolHoverOn}
+  onMouseLeave={toolHoverOff}
+>
+  Root
 </button>
 
 

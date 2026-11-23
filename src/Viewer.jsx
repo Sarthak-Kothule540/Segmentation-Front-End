@@ -5554,7 +5554,29 @@ function GhostTeeth({ parts, show }) {
   );
 }
 
+// ---------------- Root: an approximate root under every crown (made in roots.js) ----------------
+const ROOT_COLOR = "#cdc3ab"; // beige root
+const ROOT_OPACITY = 0.8; // 1 = solid, lower = more see-through
 
+function RootMeshes({ parts, show }) {
+  if (!show || !parts || parts.length === 0) return null;
+
+  return (
+    <>
+      {parts.map((p) => (
+        <mesh key={p.name} geometry={p.geo} renderOrder={4} raycast={noRaycast}>
+          <meshStandardMaterial
+            color={ROOT_COLOR}
+            transparent
+            opacity={ROOT_OPACITY}
+            roughness={0.75}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </>
+  );
+}
 
 export default function Viewer({
   upperGeo,
@@ -5580,6 +5602,7 @@ export default function Viewer({
   gridRef,
   ghostParts,
   occlusion, // null, or the result of computeOcclusion (occlusion.js)
+  rootParts = { upper: null, lower: null }, // Root view: { upper: [{ name, geo }], lower: [...] }
 
 }) {
   const modelRef = useRef();
@@ -5629,6 +5652,7 @@ export default function Viewer({
          />
          <OcclusionLabels labels={occlusion?.upper.labels} show={showUpper && segVisible.upperTeeth} />
          <GhostTeeth parts={ghostParts.upper} show={segVisible.upperTeeth} />
+                  <RootMeshes parts={rootParts.upper} show={segVisible.upperTeeth} />
 
         </group>
         <group visible={showLower}>
@@ -5659,6 +5683,7 @@ export default function Viewer({
         <OcclusionLabels labels={occlusion?.lower.labels} show={showLower && segVisible.lowerTeeth} />
 
         <GhostTeeth parts={ghostParts.lower} show={segVisible.lowerTeeth} />
+        <RootMeshes parts={rootParts.lower} show={segVisible.lowerTeeth} />
 
         </group>
       </group>

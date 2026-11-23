@@ -17384,6 +17384,8 @@ import { computeMovement, toothFrames } from "./movement.js";
 import MovementPanel from "./MovementPanel.jsx";
 import { computeStaging, toothMatrixAtStage, gumAtStage, computeStageMovement } from "./staging.js";
 import StagingBar from "./StagingBar.jsx";
+import { computeRoots } from "./roots.js";
+
 
 
 // import { loadLatCurves, loadStlParts, saveLatCurve } from "./latUtils.js";
@@ -17569,6 +17571,7 @@ const [gridSize, setGridSize] = useState(1); // grid spacing in mm
 const [showSuperimpose, setShowSuperimpose] = useState(false);
 const [showOcclusion, setShowOcclusion] = useState(false); // occlusion contact map on/off
 const [showMovement, setShowMovement] = useState(false); // Movement table on/off
+const [showRoot, setShowRoot] = useState(false); // Root view on/off (gum hidden, a root under every crown)
 const [stage, setStage] = useState(0); // Staging: the stage shown (0 = Initial Position)
 const [playing, setPlaying] = useState(false); // Staging: Play is running
 const [stageMovementMode, setStageMovementMode] = useState("zero"); // Staging Movement table: "zero" or "prev"
@@ -18654,6 +18657,56 @@ const handleToggleMovement = () => {
   setShowMovement(true);
 };
 
+
+// ---------------- Root: gum hidden, an approximate root under every crown (roots.js) ----------------
+// works on Initial Position and Final Position; the roots are made from the teeth on screen, so they move with them
+const rootSource = view === "segment" ? segParts : view === "automaticSetup" ? setupParts : null;
+const rootActive =
+  showRoot && !!rootSource && teethOnly(rootSource.upper).length + teethOnly(rootSource.lower).length > 0;
+
+// made once per Segment / Automatic Setup result, not on every render
+const roots = useMemo(() => {
+  if (!rootActive) return NO_PARTS;
+  try {
+    return computeRoots({ upper: teethOnly(rootSource.upper), lower: teethOnly(rootSource.lower) });
+  } catch (err) {
+    console.error("Root failed:", err);
+    return NO_PARTS;
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [rootActive, rootSource]);
+
+// the roots made for one result are thrown away when new ones are made
+useEffect(() => {
+  return () => {
+    for (const jaw of ["upper", "lower"]) (roots[jaw] || []).forEach((p) => p.geo.dispose());
+  };
+}, [roots]);
+
+// in Root view only the teeth are drawn (no gum, no base)
+const shownParts = rootActive
+  ? {
+      upper: viewParts.upper && teethOnly(viewParts.upper),
+      lower: viewParts.lower && teethOnly(viewParts.lower),
+    }
+  : viewParts;
+
+const handleToggleRoot = () => {
+  if (busy) return;
+  if (rootActive) {
+    setShowRoot(false);
+    return;
+  }
+  if (!hasSetup) {
+    alert("Root needs the teeth. Please do Automatic Setup first.");
+    return;
+  }
+  if (view !== "segment" && view !== "automaticSetup") setView("automaticSetup");
+  setShowRoot(true);
+};
+
+
+
 const viewLabels = view === "segment" ? toothLabels : NO_LABELS;
 const viewTrimlines = view === "generateTrimline" ? trimlines : NO_RESULT;
 const viewResults =
@@ -18704,6 +18757,8 @@ onToggleSuperimpose={handleToggleSuperimpose}
       onToggleOcclusion={handleToggleOcclusion}
       showMovement={movementActive}
       onToggleMovement={handleToggleMovement}
+      showRoot={rootActive}
+      onToggleRoot={handleToggleRoot}
       onStaging={handleStaging}
         setupReady={doneSteps.automaticSetup}
         view={view}
@@ -18719,9 +18774,13 @@ onToggleSuperimpose={handleToggleSuperimpose}
           upperGeo={upper.geo}
           lowerGeo={lower.geo}
           // upperParts={segParts.upper}
-          upperParts={viewParts.upper}
+        //   upperParts={viewParts.upper}
+        //   // lowerParts={segParts.lower}
+        //   lowerParts={viewParts.lower}
+          upperParts={shownParts.upper}
           // lowerParts={segParts.lower}
-          lowerParts={viewParts.lower}
+          lowerParts={shownParts.lower}
+
           showUpper={showUpper}
           showLower={showLower}
           segVisible={segVisible}
@@ -18747,6 +18806,7 @@ onToggleSuperimpose={handleToggleSuperimpose}
           gridSize={gridSize}
           ghostParts={ghostParts}
           occlusion={occlusion}
+           rootParts={roots}
 
         />
 
