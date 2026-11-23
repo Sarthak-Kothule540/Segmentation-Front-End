@@ -9295,6 +9295,23 @@ const confirmFileDialog = () => {
         <option value={5}>5 mm</option>
       </select>
     )}
+
+
+       <button
+      data-bg={showMovement ? DONE_COLOR : "transparent"}
+      style={{
+        ...styles.toolButton,
+        background: showMovement ? DONE_COLOR : "transparent",
+      }}
+      onClick={onToggleMovement}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      Movement
+    </button>
+
+
+
   </div>
 )}
 
