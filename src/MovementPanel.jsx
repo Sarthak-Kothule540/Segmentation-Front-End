@@ -733,7 +733,9 @@ function HeaderIcon({ index }) {
 // movement: { "11": { values: [...6], letters: [...6] }, ... } from computeMovement
 // Staging only: mode ("zero" / "prev") + onModeChange show the "Amount of tooth movement" list,
 // bottom keeps the panel above the staging timeline
-export default function MovementPanel({ movement, onClose, mode, onModeChange, bottom = 16 }) {
+// export default function MovementPanel({ movement, onClose, mode, onModeChange, bottom = 16 }) {
+// top: where the panel starts (App passes minus the third bar height, so it starts at the third top bar)
+export default function MovementPanel({ movement, onClose, mode, onModeChange, bottom = 16, top = 16 }) {
   // the usual 28 teeth; wisdom teeth (18, 28, 38, 48) are added only if the case has them
   const rows = [...MOVEMENT_ROWS];
   if (movement["18"]) rows.unshift("18");
@@ -742,7 +744,8 @@ export default function MovementPanel({ movement, onClose, mode, onModeChange, b
   if (movement["38"]) rows.push("38");
 
   return (
-    <div style={{ ...styles.panel, bottom }} onPointerDown={(e) => e.stopPropagation()}>
+    // <div style={{ ...styles.panel, bottom }} onPointerDown={(e) => e.stopPropagation()}>
+        <div style={{ ...styles.panel, top, bottom }} onPointerDown={(e) => e.stopPropagation()}>
       <div style={styles.titleRow}>
         <span style={styles.title}>Movement</span>
         <button style={styles.close} onClick={onClose} title="Close">
@@ -809,7 +812,7 @@ export default function MovementPanel({ movement, onClose, mode, onModeChange, b
 const styles = {
   panel: {
     position: "absolute",
-    left: 16,
+    left:0,
     top: 16,
     bottom: 16,
     width: 400,

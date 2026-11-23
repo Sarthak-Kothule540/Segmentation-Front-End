@@ -9310,6 +9310,19 @@ const confirmFileDialog = () => {
       Movement
     </button>
 
+        <button
+      data-bg={showSuperimpose ? DONE_COLOR : "transparent"}
+      style={{
+        ...styles.toolButton,
+        background: showSuperimpose ? DONE_COLOR : "transparent",
+      }}
+      onClick={onToggleSuperimpose}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      Superimpose
+    </button>
+
 
 
   </div>

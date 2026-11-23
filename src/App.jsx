@@ -17371,7 +17371,8 @@
 
 
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import TopBar from "./TopBar.jsx";
 import Viewer from "./Viewer.jsx";
 import VisibilityButtons from "./VisibilityButtons.jsx";
@@ -17571,6 +17572,19 @@ const [showMovement, setShowMovement] = useState(false); // Movement table on/of
 const [stage, setStage] = useState(0); // Staging: the stage shown (0 = Initial Position)
 const [playing, setPlaying] = useState(false); // Staging: Play is running
 const [stageMovementMode, setStageMovementMode] = useState("zero"); // Staging Movement table: "zero" or "prev"
+
+// Movement table starts at the top of the third bar: measure how tall the third bar is
+const viewAreaRef = useRef(null);
+const [thirdBarHeight, setThirdBarHeight] = useState(56);
+useLayoutEffect(() => {
+  const measure = () => {
+    // the 3D area starts right under the third bar; the first two bars are BARS_HEIGHT tall
+    if (viewAreaRef.current) setThirdBarHeight(Math.max(0, viewAreaRef.current.offsetTop - BARS_HEIGHT));
+  };
+  measure();
+  window.addEventListener("resize", measure);
+  return () => window.removeEventListener("resize", measure);
+}, []);
 
        const [viewRequest, setViewRequest] = useState(null);
 
@@ -18413,7 +18427,10 @@ const setupWithGum = (jaw) => {
 };
 const setupView = { upper: setupWithGum("upper"), lower: setupWithGum("lower") };
 // Superimpose: only on the Final Position view; the initial teeth (Segment result) are drawn as a green ghost
-const superimposeActive = showSuperimpose && view === "automaticSetup";
+// const superimposeActive = showSuperimpose && view === "automaticSetup";
+// also on the Staging view: the initial teeth as a green ghost over the shown stage
+const superimposeActive = showSuperimpose && (view === "automaticSetup" || view === "staging");
+
 
 const initialTeeth = (jaw) => (segParts[jaw] || []).filter((p) => !isGumPart(p) && !isWholePart(p));
 
@@ -18426,8 +18443,12 @@ const handleToggleSuperimpose = () => {
   if (superimposeActive) {
     setShowSuperimpose(false);
   } else {
-    setShowSuperimpose(true);
-    setView("automaticSetup"); // Superimpose compares with the final position
+    // setShowSuperimpose(true);
+    // setView("automaticSetup"); // Superimpose compares with the final position
+        setShowSuperimpose(true);
+    // Superimpose compares with the final position (on Staging it stays on the shown stage)
+    if (view !== "staging") setView("automaticSetup");
+
   }
 };
 
@@ -18691,7 +18712,9 @@ onToggleSuperimpose={handleToggleSuperimpose}
       />
 
       {/* position: relative lets the buttons float over the top-right of the 3D area */}
-      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+      {/* <div style={{ flex: 1, position: "relative", minHeight: 0 }}> */}
+            <div ref={viewAreaRef} style={{ flex: 1, position: "relative", minHeight: 0 }}>
+
         <Viewer
           upperGeo={upper.geo}
           lowerGeo={lower.geo}
@@ -18731,7 +18754,10 @@ onToggleSuperimpose={handleToggleSuperimpose}
         {occlusion && <OcclusionLegend />}
 
         {/* Movement table on the left: movement of each tooth from Initial to Final Position */}
-        {movement && <MovementPanel movement={movement} onClose={() => setShowMovement(false)} />}
+        {/* {movement && <MovementPanel movement={movement} onClose={() => setShowMovement(false)} />} */}
+                {movement && (
+          <MovementPanel movement={movement} onClose={() => setShowMovement(false)} top={-thirdBarHeight} />
+        )}
 
         {/* Staging: the same table, values at the shown stage, with the "Amount of tooth movement" list */}
         {stageMovement && (
@@ -18740,7 +18766,9 @@ onToggleSuperimpose={handleToggleSuperimpose}
             onClose={() => setShowMovement(false)}
             mode={stageMovementMode}
             onModeChange={setStageMovementMode}
-            bottom={16 + 56} // stays above the staging timeline
+            // bottom={16 + 56} // stays above the staging timeline
+            bottom={56} // touches the staging timeline
+           top={-thirdBarHeight} // starts at the third top bar
           />
         )}
 

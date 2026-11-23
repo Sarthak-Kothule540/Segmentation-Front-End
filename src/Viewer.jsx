@@ -5526,7 +5526,8 @@ function OcclusionLabels({ labels, show }) {
 }
 
 // ---------------- Superimpose: the initial position of the teeth as a green ghost ----------------
-const GHOST_COLOR = "#00F7F6"; // color of the initial position
+// const GHOST_COLOR = "#00F7F6"; // color of the initial position
+const GHOST_COLOR = "#09fa9e"; // color of the initial position
 const GHOST_OPACITY = 0.55; // 1 = solid, lower = more see-through
 
 function GhostTeeth({ parts, show }) {
