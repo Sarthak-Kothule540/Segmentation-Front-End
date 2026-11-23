@@ -40,7 +40,8 @@ const toothId = (name) => {
 const positionsOf = (geo) => geo.attributes.position.array;
 
 // surface center: average of triangle centers, weighted by triangle area (not fooled by dense areas)
-function surfaceCenter(geo) {
+// function surfaceCenter(geo) {
+export function surfaceCenter(geo) {
   const pos = geo.attributes.position;
   const idx = geo.index;
   const triCount = idx ? idx.count / 3 : pos.count / 3;
@@ -143,7 +144,8 @@ function sampleVertices(arr, count) {
 }
 
 // rigid motion from Initial tooth to Final tooth
-function toothMotion(origGeo, movedGeo) {
+// function toothMotion(origGeo, movedGeo) {
+export function toothMotion(origGeo, movedGeo) {
   const po = positionsOf(origGeo);
   const pm = positionsOf(movedGeo);
 

@@ -8557,7 +8557,8 @@
 import { useRef, useState } from "react";
 import ProgressBar from "./ProgressBar.jsx";
 
-const TABS = ["File", "Clean Model", "Segment", "Setup"];
+// const TABS = ["File", "Clean Model", "Segment", "Setup"];
+const TABS = ["File", "Clean Model", "Segment", "Setup", "Staging"];
 const CLEAN_MODEL_TOOLS = ["Clean Model", "Generate Trimline", "Trim Model", "Add Base"];
 const VIEWS = ["Front View", "Back View", "Top View", "Bottom View", "Left View", "Right View"];
 
@@ -8909,6 +8910,8 @@ export default function TopBar({
   onToggleOcclusion,
   showMovement,
   onToggleMovement,
+  onStaging,
+
 
 }) {
   // the second bar shows the tools of this tab (File has no page there, it opens a dialog)
@@ -8979,7 +8982,9 @@ const confirmFileDialog = () => {
                 // setActiveTab(tab);
                 setActiveTab(tab);
                 setClickedTab(tab);
+                // if (tab === "Setup" && onAutomaticSetup) onAutomaticSetup();
                 if (tab === "Setup" && onAutomaticSetup) onAutomaticSetup();
+                if (tab === "Staging" && onStaging) onStaging();
               }}
               style={{
                 ...styles.tabButton,
@@ -9262,6 +9267,39 @@ const confirmFileDialog = () => {
 
   </div>
 )}
+
+
+{activeTab === "Staging" && setupReady && (
+  <div style={styles.toolRow}>
+    <button
+      data-bg={showGrid ? DONE_COLOR : "transparent"}
+      style={{
+        ...styles.toolButton,
+        background: showGrid ? DONE_COLOR : "transparent",
+      }}
+      onClick={onToggleGrid}
+      onMouseEnter={toolHoverOn}
+      onMouseLeave={toolHoverOff}
+    >
+      Grid
+    </button>
+
+    {showGrid && (
+      <select
+        value={gridSize}
+        onChange={(e) => onGridSizeChange(Number(e.target.value))}
+        style={styles.gridSelect}
+      >
+        <option value={1}>1 mm</option>
+        <option value={2}>2 mm</option>
+        <option value={5}>5 mm</option>
+      </select>
+    )}
+  </div>
+)}
+
+
+
 
         {/* progress bar: centered inside the second bar */}
         {progress && (
