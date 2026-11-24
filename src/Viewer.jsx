@@ -5556,7 +5556,7 @@ function GhostTeeth({ parts, show }) {
 
 // ---------------- Root: an approximate root under every crown (made in roots.js) ----------------
 const ROOT_COLOR = "#cdc3ab"; // beige root
-const ROOT_OPACITY = 0.8; // 1 = solid, lower = more see-through
+const ROOT_OPACITY =1; // 1 = solid, lower = more see-through
 
 function RootMeshes({ parts, show }) {
   if (!show || !parts || parts.length === 0) return null;
@@ -5566,11 +5566,18 @@ function RootMeshes({ parts, show }) {
       {parts.map((p) => (
         <mesh key={p.name} geometry={p.geo} renderOrder={4} raycast={noRaycast}>
           <meshStandardMaterial
-            color={ROOT_COLOR}
-            transparent
+            // color={ROOT_COLOR}
+            // transparent
+            // opacity={ROOT_OPACITY}
+            // roughness={0.75}
+            // depthWrite={false}
+
+              color={ROOT_COLOR}
+            transparent={ROOT_OPACITY < 1}
             opacity={ROOT_OPACITY}
             roughness={0.75}
-            depthWrite={false}
+            side={THREE.DoubleSide}
+            depthWrite={ROOT_OPACITY >= 1} // solid roots hide what is behind them
           />
         </mesh>
       ))}
