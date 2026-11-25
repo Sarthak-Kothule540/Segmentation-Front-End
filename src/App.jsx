@@ -17384,7 +17384,8 @@ import { computeMovement, toothFrames } from "./movement.js";
 import MovementPanel from "./MovementPanel.jsx";
 import { computeStaging, toothMatrixAtStage, gumAtStage, computeStageMovement } from "./staging.js";
 import StagingBar from "./StagingBar.jsx";
-import { computeRoots } from "./roots.js";
+// import { computeRoots } from "./roots.js";
+import { computeRoots, saveTeethWithRoots } from "./roots.js";
 
 
 
@@ -18679,17 +18680,55 @@ const roots = useMemo(() => {
 // the roots made for one result are thrown away when new ones are made
 useEffect(() => {
   return () => {
-    for (const jaw of ["upper", "lower"]) (roots[jaw] || []).forEach((p) => p.geo.dispose());
+    // for (const jaw of ["upper", "lower"]) (roots[jaw] || []).forEach((p) => p.geo.dispose());
+        for (const jaw of ["upper", "lower"]) (roots[jaw] || []).forEach((p) => { p.geo.dispose(); if (p.crown) p.crown.dispose(); });
   };
 }, [roots]);
 
+
+// every tooth + its root is also saved as one closed STL in D:\Temp\Output (11withroot.stl, ...)
+useEffect(() => {
+  if (!rootActive || roots === NO_PARTS) return;
+  let cancelled = false;
+  saveTeethWithRoots(
+    BACKEND_URL,
+    { upper: teethOnly(rootSource.upper), lower: teethOnly(rootSource.lower) },
+    roots,
+    () => cancelled
+  ).catch((err) => console.error("Saving teeth with roots failed:", err));
+  return () => {
+    cancelled = true;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [roots]);
+
 // in Root view only the teeth are drawn (no gum, no base)
-const shownParts = rootActive
-  ? {
-      upper: viewParts.upper && teethOnly(viewParts.upper),
-      lower: viewParts.lower && teethOnly(viewParts.lower),
-    }
-  : viewParts;
+// const shownParts = rootActive
+//   ? {
+//       upper: viewParts.upper && teethOnly(viewParts.upper),
+//       lower: viewParts.lower && teethOnly(viewParts.lower),
+//     }
+//   : viewParts;
+
+
+// in Root view only the teeth are drawn (no gum, no base), and each crown is shown cut where its
+// root joins it (two-thirds of the way down, JOIN_AT in roots.js)
+const withRootCrowns = (list, jawRoots) =>
+  list.map((p) => {
+    const r = (jawRoots || []).find((x) => x.name === "root_" + p.name);
+    return r && r.crown ? { ...p, geo: r.crown } : p;
+  });
+const shownParts = useMemo(
+  () =>
+    rootActive
+      ? {
+          upper: viewParts.upper && withRootCrowns(teethOnly(viewParts.upper), roots.upper),
+          lower: viewParts.lower && withRootCrowns(teethOnly(viewParts.lower), roots.lower),
+        }
+      : viewParts,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [rootActive, viewParts, roots]
+);
 
 const handleToggleRoot = () => {
   if (busy) return;
