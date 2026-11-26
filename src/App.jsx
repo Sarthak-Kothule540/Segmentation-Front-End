@@ -24118,6 +24118,7 @@ const handleToggleBolton = () => {
   if (busy) return;
   if (boltonActive) {
     setShowBolton(false);
+    setShowUpper(true);
     return;
   }
   if (!hasSetup) {
@@ -24127,6 +24128,7 @@ const handleToggleBolton = () => {
   if (view !== "segment" && view !== "automaticSetup") setView("automaticSetup");
   setShowMovement(false); // both tables sit on the left, so only one is open
   setShowMeasure(false);
+  setShowUpper(false); // Bolton opened: upper jaw hidden by default
   setShowBolton(true);
 };
 

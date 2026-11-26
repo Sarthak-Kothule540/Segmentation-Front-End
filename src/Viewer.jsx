@@ -11622,7 +11622,7 @@ function RootMeshes({ parts, show }) {
 // ---------------- Bolton: a line along the arch, a mark at both ends of every tooth, its width above ----------------
 const BOLTON_LINE_COLOR = "#777777"; // grey line and marks
 const BOLTON_LABEL_BORDER = "#6a55c9"; // purple frame of the width labels
-const BOLTON_LABEL_HEIGHT_MM = 2.2; // label size in the 3D view (mm): it grows and shrinks with zoom, like the teeth
+const BOLTON_LABEL_HEIGHT_MM = 1.5; // label size in the 3D view (mm): it grows and shrinks with zoom, like the teeth
 const BOLTON_LABEL_LIFT = 0.35; // gap between the line and the label, as a part of the label height
 
 // the label is drawn into a small picture once, and shown as a sprite (always facing the camera).
