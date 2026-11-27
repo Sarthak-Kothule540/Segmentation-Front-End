@@ -34,22 +34,48 @@ const TrashIcon = () => (
 );
 
 // one of the two tool buttons
-function ToolButton({ active, onClick, icon, children }) {
+// function ToolButton({ active, onClick, icon, children }) {
+//   return (
+//     <button
+//       style={{
+//         ...styles.tool,
+//         background: active ? "#fff" : "#f2f3f5",
+//         borderColor: active ? PURPLE : "#f2f3f5",
+//         color: active ? PURPLE : "#333",
+//       }}
+//       onClick={onClick}
+//     >
+//       {icon}
+//       <span>{children}</span>
+//     </button>
+//   );
+// }
+
+
+function ToolButton({ active, onClick, icon, sub, children }) {
   return (
     <button
       style={{
         ...styles.tool,
-        background: active ? "#fff" : "#f2f3f5",
-        borderColor: active ? PURPLE : "#f2f3f5",
+        background: active ? "#f1eefc" : "#f2f3f5",
+        borderColor: active ? PURPLE : "transparent",
         color: active ? PURPLE : "#333",
       }}
       onClick={onClick}
     >
-      {icon}
-      <span>{children}</span>
+      {/* {icon}
+      <span style={styles.toolName}>{children}</span>
+      <span style={styles.toolSub}>{sub}</span> */}
+
+            {icon}
+      <span style={styles.toolText}>
+        <span style={styles.toolName}>{children}</span>
+        <span style={styles.toolSub}>{sub}</span>
+      </span>
     </button>
   );
 }
+
 
 // the on/off switch next to "show all"
 function Switch({ on, onChange }) {
@@ -102,8 +128,8 @@ export default function MeasurementPanel({
 
       <div style={styles.scroll}>
         {/* <div style={styles.section}>Measuring tool</div> */}
-        <div style={{ ...styles.section, textAlign: "center" }}>Measuring tool</div>
-        <ToolButton
+        <div style={{ ...styles.section, textAlign: "center" }}>Measurement Type</div>
+        {/* <ToolButton
           active={mode === "distance"}
           onClick={() => onModeChange(mode === "distance" ? null : "distance")}
           icon={<DistanceIcon />}
@@ -116,7 +142,26 @@ export default function MeasurementPanel({
           icon={<AngleIcon />}
         >
           angle with three point
-        </ToolButton>
+        </ToolButton> */}
+
+        <div style={styles.tools}>
+  <ToolButton
+    active={mode === "distance"}
+    onClick={() => onModeChange(mode === "distance" ? null : "distance")}
+    icon={<DistanceIcon />}
+    sub="2 points"
+  >
+    Distance
+  </ToolButton>
+  <ToolButton
+    active={mode === "angle"}
+    onClick={() => onModeChange(mode === "angle" ? null : "angle")}
+    icon={<AngleIcon />}
+    sub="3 points"
+  >
+    Angle
+  </ToolButton>
+</div>
         {mode && (
           <div style={styles.hint}>
             Click point {Math.min(pendingCount + 1, need)} of {need} on the teeth or gum.
@@ -204,19 +249,46 @@ const styles = {
   scroll: { flex: 1, overflowY: "auto", padding: "16px 14px 12px" },
 
   section: { fontSize: 13, fontWeight: 700, marginBottom: 12 },
-  tool: {
-    width: "100%",
+  // tool: {
+  //   width: "100%",
+  //   display: "flex",
+  //   alignItems: "center",
+  //   justifyContent: "center",
+  //   gap: 6,
+  //   padding: "7px 0",
+  //   marginBottom: 8,
+  //   border: "1px solid",
+  //   borderRadius: 4,
+  //   fontSize: 12,
+  //   cursor: "pointer",
+  // },
+
+    tools: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
+  // tool: {
+  //   display: "flex",
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   justifyContent:"center",
+  //   gap: 4,
+  //   padding: "14px 0 12px",
+  //   border: "1px solid",
+  //   borderRadius: 6,
+  //   cursor: "pointer",
+  // },
+    tool: {
     display: "flex",
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    padding: "7px 0",
-    marginBottom: 8,
+    justifyContent: "flex-start",
+    gap: 8,
+    padding: "14px 0 12px 18px",
     border: "1px solid",
-    borderRadius: 4,
-    fontSize: 12,
+    borderRadius: 6,
     cursor: "pointer",
   },
+  toolName: { fontSize: 13, fontWeight: 600 },
+  toolSub: { fontSize: 11, opacity: 0.65 },
+    toolText: { display: "flex", flexDirection: "column", alignItems: "flex-start" },
   hint: { fontSize: 12, color: "#777", lineHeight: 1.5, marginTop: 2 },
 
   recordBar: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
