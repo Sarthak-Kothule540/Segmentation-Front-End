@@ -13,10 +13,10 @@ const MEASURE_LINE_LIGHT = "#ffffff"; // the white dashes
 const MEASURE_LINE_WIDTH = 4; // line thickness (screen pixels)
 const MEASURE_DASH_MM = 0.6; // length of one white dash (mm)
 const MEASURE_GAP_MM = 0.4; // gap between two dashes (mm)
-const MEASURE_X_MM = 1.3; // size of the X marks (mm)
-const MEASURE_LABEL_HEIGHT_MM = 2.2; // label size in the 3D view (mm): grows and shrinks with zoom, like the Bolton labels
+const MEASURE_X_MM = 1.0; // size of the X marks (mm)
+const MEASURE_LABEL_HEIGHT_MM = 1.3; // label size in the 3D view (mm): grows and shrinks with zoom, like the Bolton labels
 const MEASURE_LABEL_GAP = 0.35; // gap between a distance line and its value, as a part of the label height
-const MEASURE_ANGLE_LABEL_MM = 2.5; // the angle value sits this far from the corner point (mm)
+const MEASURE_ANGLE_LABEL_MM = 2.0; // the angle value sits this far from the corner point (mm)
 const MEASURE_CLICK_PX = 5; // a mouse press that moves more than this is a turn of the model, not a click
 const MEASURE_HIDDEN_TOLERANCE_MM = 0.8; // a point counts as hidden when a tooth/gum is more than this in front of it
 
