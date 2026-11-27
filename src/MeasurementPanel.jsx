@@ -85,15 +85,24 @@ export default function MeasurementPanel({
 
   return (
     <div style={{ ...styles.panel, top, bottom }} onPointerDown={(e) => e.stopPropagation()}>
-      <div style={styles.titleRow}>
+      {/* <div style={styles.titleRow}>
         <span style={styles.title}>Measurement</span>
         <button style={styles.close} onClick={onClose} title="Close">
           ✕
         </button>
-      </div>
+      </div> */}
+      <div style={styles.titleRow}>
+  <span style={styles.titleSide} />
+  <span style={styles.title}>Measurement</span>
+  <span style={{ ...styles.titleSide, textAlign: "right" }}>
+    <button style={styles.close} onClick={onClose} title="Close">✕</button>
+  </span>
+</div>
+
 
       <div style={styles.scroll}>
-        <div style={styles.section}>Measuring tool</div>
+        {/* <div style={styles.section}>Measuring tool</div> */}
+        <div style={{ ...styles.section, textAlign: "center" }}>Measuring tool</div>
         <ToolButton
           active={mode === "distance"}
           onClick={() => onModeChange(mode === "distance" ? null : "distance")}
@@ -183,6 +192,7 @@ const styles = {
     borderBottom: "1px solid #e8e8e8",
   },
   title: { fontSize: 15, fontWeight: 700 },
+  titleSide: { flex: 1 },
   close: {
     border: "none",
     background: "transparent",
